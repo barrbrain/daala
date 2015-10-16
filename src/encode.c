@@ -2750,11 +2750,10 @@ int daala_encode_img_in(daala_enc_ctx *enc, od_img *img, int duration) {
   od_ec_encode_bool_q15(&enc->ec, mbctx.use_haar_wavelet, 16384);
   od_ec_encode_bool_q15(&enc->ec, mbctx.is_golden_frame, 16384);
   for (pli = 0; pli < nplanes; pli++) {
-    enc->coded_quantizer[pli] =
-     od_quantizer_to_codedquantizer(
-      od_quantizer_from_quality(enc->quality[pli]));
+    enc->coded_quantizer[pli] =  od_quantizer_to_codedquantizer(
+      od_quantizer_from_quality(enc->quality[pli]), 0);
     enc->quantizer[pli] =
-     od_codedquantizer_to_quantizer(enc->coded_quantizer[pli]);
+     od_codedquantizer_to_quantizer(enc->coded_quantizer[pli], !!pli);
   }
   if (mbctx.is_keyframe) {
     for (pli = 0; pli < nplanes; pli++) {
@@ -2791,7 +2790,7 @@ int daala_encode_img_in(daala_enc_ctx *enc, od_img *img, int duration) {
      && enc->coded_quantizer[pli] != 0) {
       enc->coded_quantizer[pli] = OD_MAXI(1, enc->coded_quantizer[pli] - 1);
       enc->quantizer[pli] =
-       od_codedquantizer_to_quantizer(enc->coded_quantizer[pli]);
+       od_codedquantizer_to_quantizer(enc->coded_quantizer[pli], !!pli);
     }
   }
   OD_LOG((OD_LOG_ENCODER, OD_LOG_INFO, "is_keyframe=%d", mbctx.is_keyframe));

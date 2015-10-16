@@ -992,7 +992,7 @@ static void od_decode_coefficients(od_dec_ctx *dec, od_mb_dec_ctx *mbctx) {
     dec->coded_quantizer[pli] = od_ec_dec_uint(&dec->ec,
       OD_N_CODED_QUANTIZERS, "quantizer");
     dec->quantizer[pli] =
-     od_codedquantizer_to_quantizer(dec->coded_quantizer[pli]);
+     od_codedquantizer_to_quantizer(dec->coded_quantizer[pli], !!pli);
   }
   for (sby = 0; sby < nvsb; sby++) {
     for (sbx = 0; sbx < nhsb; sbx++) {
