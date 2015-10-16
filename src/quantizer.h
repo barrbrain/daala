@@ -27,7 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 # define _quantizer_H (1)
 
 extern const int OD_N_CODED_QUANTIZERS;
-int od_quantizer_to_codedquantizer(int q);
-int od_codedquantizer_to_quantizer(int cq);
+int od_quantizer_to_codedquantizer(int q, int is_chroma);
+int od_codedquantizer_to_quantizer(int cq, int is_chroma);
 
 #endif
