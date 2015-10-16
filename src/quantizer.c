@@ -39,7 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
   The starting point of 9 is not arbitrary; it represents the finest quantizer
    greater than .5 for a COEFF_SHIFT of 4, and results in a lossy encoding
    bitrate typically between between half and 3/4 the bitrate of lossless.*/
-static const int OD_CODED_QUANTIZER_MAP_Q4[64]={
+static const int OD_CODED_QUANTIZER_MAP_Q4[2][64]={{
   /*0*/
   0x0000,
   /*1*/
@@ -64,13 +64,49 @@ static const int OD_CODED_QUANTIZER_MAP_Q4[64]={
   0x0D48, 0x0ED3, 0x108C, 0x1278, 0x149D, 0x1702,
   /*61*/
   0x19AE, 0x1CAA, 0x1FFF
-};
+}, {
+/*Daala codes 64 unique possible quantizers for chroma planes.
+  The table below maps coded quantizer values to actual quantizer values.
+  After 0, which indicates lossless, quantizers have been fitted
+   to subset1 against a log-mean-CIEDE2000 metric and maximize
+   the distance in BD-rate space from the following bounding curves:
+   trunc(e(((cq-((cq-1)**2.5)/976.377)-6.235)*.10989525)*(1<<4))
+   trunc(e(((cq-((cq-1)**2)/124)-6.235)*.10989525)*(1<<4))
+   while maintaining strictly equal-or-increasing interval spacing.
+  This gives us an asymptotically log-spaced range of 9 to 2419
+  (representing .5625 to 151.1875 coded in Q4),
+  with quantizer slightly less than doubling every
+   six steps at each end and slowing in the middle. */
+  0x0000,
+  /*1*/
+  0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E,
+  /*7*/
+  0x0010, 0x0012, 0x0014, 0x0016, 0x0019, 0x001C,
+  /*13*/
+  0x001F, 0x0022, 0x0026, 0x002A, 0x002E, 0x0032,
+  /*19*/
+  0x0037, 0x003D, 0x0043, 0x0049, 0x0051, 0x0059,
+  /*25*/
+  0x0061, 0x0069, 0x0073, 0x007E, 0x008A, 0x0097,
+  /*31*/
+  0x00A5, 0x00B3, 0x00C3, 0x00D4, 0x00E5, 0x00F9,
+  /*37*/
+  0x0110, 0x0127, 0x013E, 0x0156, 0x0171, 0x018F,
+  /*43*/
+  0x01AE, 0x01CF, 0x01F7, 0x021F, 0x0247, 0x026F,
+  /*49*/
+  0x0297, 0x02CA, 0x02FD, 0x0333, 0x037B, 0x03C3,
+  /*55*/
+  0x0417, 0x0483, 0x04FC, 0x0591, 0x0626, 0x06BC,
+  /*61*/
+  0x078A, 0x0871, 0x0973
+}};
 
 const int OD_N_CODED_QUANTIZERS =
- sizeof(OD_CODED_QUANTIZER_MAP_Q4)/sizeof(*OD_CODED_QUANTIZER_MAP_Q4);
+ sizeof(*OD_CODED_QUANTIZER_MAP_Q4)/sizeof(**OD_CODED_QUANTIZER_MAP_Q4);
 
 /*Maps coded quantizer to actual quantizer value.*/
-int od_codedquantizer_to_quantizer(int cq) {
+int od_codedquantizer_to_quantizer(int cq, int is_chroma) {
   /*The quantizers above are sensible for a COEFF_SHIFT of 4 or
      greater.
     ASSERT just in case we ever try to use them for COEFF_SHIFT < 4,
@@ -78,9 +114,9 @@ int od_codedquantizer_to_quantizer(int cq) {
   OD_ASSERT(OD_COEFF_SHIFT >= 4);
   if (cq == 0) return 0;
   return cq < OD_N_CODED_QUANTIZERS
-   ? (OD_CODED_QUANTIZER_MAP_Q4[cq]
+   ? (OD_CODED_QUANTIZER_MAP_Q4[is_chroma][cq]
    << OD_COEFF_SHIFT >> 4)
-   : (OD_CODED_QUANTIZER_MAP_Q4[OD_N_CODED_QUANTIZERS-1]
+   : (OD_CODED_QUANTIZER_MAP_Q4[is_chroma][OD_N_CODED_QUANTIZERS-1]
    << OD_COEFF_SHIFT >> 4);
 }
 
@@ -88,7 +124,7 @@ int od_codedquantizer_to_quantizer(int cq) {
    less than or equal to the one passed in, except for values between 0
    (lossless) and the minimum lossy quantizer, in which case the
    minimum lossy quantizer is returned.*/
-int od_quantizer_to_codedquantizer(int q){
+int od_quantizer_to_codedquantizer(int q, int is_chroma){
   if (q == 0) {
     return 0;
   }
@@ -103,7 +139,7 @@ int od_quantizer_to_codedquantizer(int q){
     while (hi > lo + 1) {
       unsigned mid;
       mid = (hi + lo) >> 1;
-      if (q < OD_CODED_QUANTIZER_MAP_Q4[mid]) {
+      if (q < OD_CODED_QUANTIZER_MAP_Q4[is_chroma][mid]) {
         hi = mid;
       }
       else {
