@@ -2763,7 +2763,7 @@ int daala_encode_img_in(daala_enc_ctx *enc, od_img *img, int duration) {
      od_quantizer_to_codedquantizer(
       od_quantizer_from_quality(enc->quality[pli]));
     if (pli > 0 && cq > 15) {
-      cq -= (cq * cq * 9) >> 11;
+      cq -= (cq * cq * 33) >> 13;
     }
     enc->coded_quantizer[pli] = cq;
     enc->quantizer[pli] =
