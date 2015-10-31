@@ -52,6 +52,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 # include <io.h>
 # include "getopt.h"
 #endif
+#include <math.h>
 #include <png.h>
 #include <zlib.h>
 #include <ogg/os_types.h>
@@ -126,6 +127,18 @@ static void usage(const char *_argv0){
    _argv0);
 }
 
+static double srgb_linearize(unsigned f){
+  if (f <= 2650)
+    return f * 1.18103884649353109592e-6;
+  return pow(fma(f, 1.44635278641672244164e-5, 5.21327014218009478672e-2), 2.4);
+}
+
+static double lab_f(double t){
+  if (24389. * t <= 216.)
+    return fma(7.78703703703703703703, t, .137931034482758620689);
+  return cbrt(t);
+}
+
 static void ycbcr_to_rgb(png_bytep *_image,const video_input_info *_info,
  video_input_ycbcr _ycbcr){
   unsigned char *y_row;
@@ -176,6 +189,16 @@ static void ycbcr_to_rgb(png_bytep *_image,const video_input_info *_info,
       unsigned rval;
       unsigned gval;
       unsigned bval;
+      double rlin;
+      double glin;
+      double blin;
+      double X;
+      double Y;
+      double Z;
+      double fY;
+      double L;
+      double A;
+      double B;
       int      extrabits;
       extrabits=_info->depth-8;
       if(_info->depth<=8){
@@ -201,6 +224,19 @@ static void ycbcr_to_rgb(png_bytep *_image,const video_input_info *_info,
       bval=OD_CLAMPI(0,(int32_t)OD_DIV_ROUND(
        2916394880000LL*yval+5290866304968LL*cbval,9745792000LL<<extrabits),
        65535);
+      rlin=srgb_linearize(rval);
+      glin=srgb_linearize(gval);
+      blin=srgb_linearize(bval);
+      X=0.41239079926595930*rlin+0.35758433938387800*glin+0.18048078840183430*blin;
+      Y=0.21263900587151024*rlin+0.71516867876775600*glin+0.07219231536073371*blin;
+      Z=0.01933081871559182*rlin+0.11919477979462598*glin+0.95053215224966070*blin;
+      fY=lab_f(Y);
+      L=fma(116.,fY,-16.);
+      A=500.*(lab_f(X*1.04814112172062846541)-fY);
+      B=200.*(fY-lab_f(Z*.918417016430480423941));
+      rval=(unsigned)(int32_t)(655.35 * L);
+      gval=(unsigned)(int32_t)fma(A, 257., 32896.);
+      bval=(unsigned)(int32_t)fma(B, 257., 32896.);
       _image[j][i++]=(unsigned char)(rval>>8);
       _image[j][i++]=(unsigned char)(rval&0xFF);
       _image[j][i++]=(unsigned char)(gval>>8);
