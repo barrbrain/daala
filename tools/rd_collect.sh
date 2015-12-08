@@ -231,6 +231,10 @@ if [ -z "$DUMP_FASTSSIM" ]; then
   export DUMP_FASTSSIM=$DAALA_ROOT/tools/dump_fastssim
 fi
 
+if [ -z "$DUMP_CIEDE2000" ]; then
+  export DUMP_CIEDE2000=$DAALA_ROOT/tools/dump_ciede2000.py
+fi
+
 if [ ! -x "$YUV2YUV4MPEG" ]; then
   echo "Executable not found YUV2YUV4MPEG=$YUV2YUV4MPEG"
   echo "Do you have the right DAALA_ROOT=$DAALA_ROOT"

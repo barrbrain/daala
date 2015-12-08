@@ -29,7 +29,8 @@ for x in $RANGE; do
   PSNRHVS=$($DUMP_PSNRHVS $FILE $BASENAME.y4m 2> /dev/null | grep Total | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
   SSIM=$($DUMP_SSIM $FILE $BASENAME.y4m 2> /dev/null | grep Total | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
   FASTSSIM=$($DUMP_FASTSSIM -c $FILE $BASENAME.y4m 2> /dev/null | grep Total | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
+  CIEDE2000=$($DUMP_CIEDE2000 $FILE $BASENAME.y4m 2> /dev/null | grep Total | tr -s ' ' | cut -d\  -f $((4-1*2)))
   rm $BASENAME.vpx $BASENAME.y4m $BASENAME-$x-enc.out $BASENAME-$x-psnr.out
-  echo $x $PIXELS $SIZE $PSNR $PSNRHVS $SSIM $FASTSSIM >> $BASENAME.out
+  echo $x $PIXELS $SIZE $PSNR $PSNRHVS $SSIM $FASTSSIM $CIEDE2000 >> $BASENAME.out
   #tail -1 $BASENAME.out
 done
