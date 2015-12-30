@@ -63,10 +63,10 @@ void od_hv_intra_pred(od_coeff *pred, const od_coeff *d, int w, int bx, int by,
 /*Trained using a linear regression on subset3.
   See the dump_cfl_scaling4 branch.*/
 static const int16_t OD_CFL_SCALING4[4][4] = {
-  { 128, 128, 100, 36 },
-  { 128, 80, 71, 35 },
-  { 100, 71, 35, 31 },
-  { 36, 35, 31, 18 },
+  { 128, 128, 90, 43 },
+  { 128, 88, 70, 47 },
+  { 90, 70, 58, 43 },
+  { 43, 47, 43, 33 },
 };
 
 void od_resample_luma_coeffs(od_coeff *chroma_pred, int cpstride,
