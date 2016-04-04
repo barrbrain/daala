@@ -78,7 +78,24 @@ static const unsigned char OD_LUMA_QM_Q4[2][OD_QM_SIZE] = {
    Masking enabled: */
  {
   21, 16,
-  18, 18, 28, 32,
+  18, 23, 33, 32,
+  17, 14, 20, 20, 28, 32,
+  16, 11, 14, 14, 17, 17, 22, 28,
+  16,  8, 12, 11, 12, 12, 15, 15, 19, 23
+ }
+};
+
+static const unsigned char OD_LUMA_QM_Q4_LOW[2][OD_QM_SIZE] = {
+ {
+  21, 16,
+  18, 16, 16, 16,
+  17, 16, 16, 16, 16, 16,
+  16, 16, 16, 16, 16, 16, 16, 16,
+  16, 16, 16, 16, 16, 16, 16, 16, 16, 16
+ },
+ {
+  21, 16,
+  18, 15, 16, 20,
   17, 14, 20, 20, 28, 32,
   16, 11, 14, 14, 17, 17, 22, 28,
   16,  8, 12, 11, 12, 12, 15, 15, 19, 23
@@ -131,7 +148,7 @@ static const od_qm_entry OD_DEFAULT_QMS[2][3][OD_NPLANES_MAX] = {
  {{{4, 256, OD_LUMA_QM_Q4[OD_MASKING_ENABLED]},
    {4, 448, OD_CHROMA_QM_Q4[OD_MASKING_ENABLED]},
    {4, 320, OD_CHROMA_QM_Q4[OD_MASKING_ENABLED]}},
-  {{318, 256, OD_LUMA_QM_Q4[OD_MASKING_ENABLED]},
+  {{318, 256, OD_LUMA_QM_Q4_LOW[OD_MASKING_ENABLED]},
    {318, 140, OD_CHROMA_QM_Q4[OD_MASKING_ENABLED]},
    {318, 100, OD_CHROMA_QM_Q4[OD_MASKING_ENABLED]}},
   {{0, 0, NULL},
