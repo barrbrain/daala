@@ -216,8 +216,8 @@ static const double OD_PVQ_BETA16_LUMA_MASKING[7] = {1.33, 1.33, 1.33, 1.33, 1.3
  1.33, 1.33};
 static const double OD_PVQ_BETA32_LUMA_MASKING[10] = {1.33, 1.33, 1.33, 1.33,
  1.33, 1.33, 1.33, 1.33, 1.33, 1.33};
-static const double OD_PVQ_BETA64_LUMA_MASKING[13] = {1.5, 1.5, 1.5, 1.5,
- 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
+static const double OD_PVQ_BETA64_LUMA_MASKING[13] = {1.33, 1.33, 1.33, 1.33,
+ 1.33, 1.33, 1.33, 1.33, 1.33, 1.33, 1.33, 1.33, 1.33};
 
 static const double OD_PVQ_BETA4_CHROMA[1] = {1.};
 static const double OD_PVQ_BETA8_CHROMA[4] = {1., 1., 1., 1.};
