@@ -269,7 +269,7 @@ struct od_state{
   od_coeff *lbuf[OD_NPLANES_MAX];
   int quantizer[OD_NPLANES_MAX];
   int coded_quantizer[OD_NPLANES_MAX];
-  unsigned char pvq_qm_q4[OD_NPLANES_MAX][OD_QM_SIZE];
+  unsigned char pvq_qm_q6[OD_NPLANES_MAX][OD_QM_SIZE];
   /*Array of flags to enable the dering filter per block.
     1 to enable (default), 0 to disable.*/
   unsigned char *dering_level;
