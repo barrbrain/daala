@@ -60,7 +60,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 
 #define OD_GOLDEN_FRAME_INTERVAL 10
 
-static const unsigned char OD_LUMA_QM_Q6[3][OD_QM_SIZE] = {
+static const unsigned char OD_LUMA_QM_Q6[4][OD_QM_SIZE] = {
 /* Flat quantization for PSNR. The DC component isn't 64 because the DC
    magnitude compensation is done here for inter (Haar DC doesn't need it).
    Masking disabled: */
@@ -82,6 +82,13 @@ static const unsigned char OD_LUMA_QM_Q6[3][OD_QM_SIZE] = {
   68,  68, 114, 105, 133, 126,
   66,  48,  79,  70,  84,  82, 105, 112,
   65,  34,  56,  51,  57,  52,  63,  60, 76, 92
+ },
+ {
+  84, 97,
+  73, 74, 111, 117,
+  68, 58,  84,  80, 96, 99,
+  66, 45,  65,  58, 66, 67, 81, 112,
+  65, 32,  50,  44, 49, 46, 53,  60, 76, 92
  },
  {
   84, 74,
@@ -123,7 +130,7 @@ typedef struct od_qm_entry {
 /* No interpolation, always use od_flat_qm_q6, but use a different scale for
    each plane.
    FIXME: Add interpolation and properly tune chroma. */
-static const od_qm_entry OD_DEFAULT_QMS[2][3][OD_NPLANES_MAX] = {
+static const od_qm_entry OD_DEFAULT_QMS[2][4][OD_NPLANES_MAX] = {
  /* Masking disabled */
  {{{4, 256, OD_LUMA_QM_Q6[OD_MASKING_DISABLED]},
    {4, 448, OD_CHROMA_QM_Q6[OD_MASKING_DISABLED]},
@@ -133,12 +140,18 @@ static const od_qm_entry OD_DEFAULT_QMS[2][3][OD_NPLANES_MAX] = {
    {318, 100, OD_CHROMA_QM_Q6[OD_MASKING_DISABLED]}},
   {{0, 0, NULL},
    {0, 0, NULL},
+   {0, 0, NULL}},
+  {{0, 0, NULL},
+   {0, 0, NULL},
    {0, 0, NULL}}},
  /* Masking enabled */
  {{{4, 256, OD_LUMA_QM_Q6[OD_MASKING_ENABLED]},
    {4, 448, OD_CHROMA_QM_Q6[OD_MASKING_ENABLED]},
    {4, 320, OD_CHROMA_QM_Q6[OD_MASKING_ENABLED]}},
-  {{318, 256, OD_LUMA_QM_Q6[OD_MASKING_ENABLED+1]},
+  {{37, 256, OD_LUMA_QM_Q6[OD_MASKING_ENABLED+1]},
+   {37, 250, OD_CHROMA_QM_Q6[OD_MASKING_ENABLED]},
+   {37, 179, OD_CHROMA_QM_Q6[OD_MASKING_ENABLED]}},
+  {{318, 256, OD_LUMA_QM_Q6[OD_MASKING_ENABLED+2]},
    {318, 140, OD_CHROMA_QM_Q6[OD_MASKING_ENABLED]},
    {318, 100, OD_CHROMA_QM_Q6[OD_MASKING_ENABLED]}},
   {{0, 0, NULL},
