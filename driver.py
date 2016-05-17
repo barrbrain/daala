@@ -20,13 +20,13 @@ def test(before, after):
   
 HEAD = subprocess.check_output('git rev-parse HEAD'.split()).decode().strip()
 os.system('make -j')
-os.system('./tools/rd_collect.sh daala ~/Downloads/subset1-y4m/*.y4m')
+os.system('./tools/rd_collect.sh daala subset1-mono/*.y4m')
 os.system('OUTPUT=%s ./tools/rd_average.sh *-daala.out' % HEAD)
 while True:
   perturb()
   os.system('make -j')
   NEXT = subprocess.check_output('git rev-parse HEAD'.split()).decode().strip()
-  os.system('./tools/rd_collect.sh daala ~/Downloads/subset1-y4m/*.y4m')
+  os.system('./tools/rd_collect.sh daala subset1-mono/*.y4m')
   os.system('OUTPUT=%s ./tools/rd_average.sh *-daala.out' % NEXT)
   if not test(HEAD+'.out', NEXT+'.out'):
     os.system('git checkout HEAD^')
