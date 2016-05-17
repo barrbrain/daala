@@ -52,6 +52,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 #if defined(OD_X86ASM)
 # include "x86/x86int.h"
 #endif
+#include "perturb.h"
 
 /* These are the PVQ equivalent of quantization matrices, except that
    the values are per-band. */
@@ -77,10 +78,10 @@ static const unsigned char OD_LUMA_QM_Q6[4][OD_QM_SIZE] = {
    on intra.
    Masking enabled: */
  {
-  84, 133,
-  73,  96, 160, 151,
-  68,  69, 111, 101, 126, 120,
-  66,  48,  79,  71,  83,  78, 98, 112,
+  84, 133-K0,
+  73,  96-K1, 160-K2, 151-K3,
+  68,  69-K4, 111-K5, 101-K6, 126-K7, 120-K8,
+  66,  48-K9,  79-KA,  71-KB,  83-KC,  78-KD, 98-KE, 112-KF,
   65,  33,  56,  51,  57,  53, 62,  60, 76, 92
  },
  {
