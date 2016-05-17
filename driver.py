@@ -30,5 +30,6 @@ while True:
   os.system('OUTPUT=%s ./tools/rd_average.sh *-daala.out' % NEXT)
   if not test(HEAD+'.out', NEXT+'.out'):
     os.system('git checkout HEAD^')
+    os.system('rm -v %s.out' % NEXT)
   else:
     HEAD = NEXT
