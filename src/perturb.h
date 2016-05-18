@@ -1,4 +1,4 @@
-#define K0 0
+#define K0 -1
 #define K1 3
 #define K2 -4
 #define K3 -4
