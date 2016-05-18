@@ -11,6 +11,6 @@
 #define KA 2
 #define KB 2
 #define KC 3
-#define KD -2
+#define KD -3
 #define KE -1
 #define KF 0
