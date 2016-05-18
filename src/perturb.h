@@ -4,7 +4,7 @@
 #define K3 -9
 #define K4 4
 #define K5 4
-#define K6 0
+#define K6 -1
 #define K7 -5
 #define K8 -3
 #define K9 6
