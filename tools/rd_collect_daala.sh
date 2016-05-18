@@ -15,7 +15,7 @@ echo $BASENAME
 WIDTH=$(head -1 $FILE | cut -d\  -f 2 | tr -d 'W')
 HEIGHT=$(head -1 $FILE | cut -d\  -f 3 | tr -d 'H')
 
-RANGE="3 4 5 6"
+RANGE="25 30 37 45"
 #RANGE="5 7 11 16 25 37 55 81 122 181 270 400"
 #RANGE="1 2 3 4 5 6 7 9 11 13 16 20 25 30 37 45 55 67 81 99 122 148 181 221 270 330 400 500"
 
