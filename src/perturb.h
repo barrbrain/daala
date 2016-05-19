@@ -8,7 +8,7 @@
 #define K7 -4
 #define K8 -5
 #define K9 3
-#define KA 4
+#define KA 5
 #define KB 2
 #define KC 2
 #define KD -4
