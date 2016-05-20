@@ -3,11 +3,15 @@ import os
 import subprocess
 import re
 
+def step(n):
+  if n == 0: return random.choice([-1, 1])
+  return n + (1, -1)[n < 0]
+
 def perturb():
   with open('src/perturb.h', 'r') as f:
     lines = [l.split() for l in f.read().splitlines()]
   choice = random.randrange(len(lines)-1)
-  lines[choice][-1] = str(int(lines[choice][-1])+random.choice([-1, 1])) 
+  lines[choice][-1] = str(step(int(lines[choice][-1])))
   with open('src/perturb.h', 'w') as f:
     f.write('\n'.join([' '.join(l) for l in lines])+'\n')
   os.system('git add src/perturb.h')
