@@ -12,5 +12,5 @@
 #define KB 0
 #define KC -1
 #define KD -1
-#define KE -4
+#define KE -5
 #define KF 0
