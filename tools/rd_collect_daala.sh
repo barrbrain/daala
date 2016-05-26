@@ -15,11 +15,12 @@ echo $BASENAME
 WIDTH=$(head -1 $FILE | cut -d\  -f 2 | tr -d 'W')
 HEIGHT=$(head -1 $FILE | cut -d\  -f 3 | tr -d 'H')
 
-RANGE="5 7 11 16 25 37 55 81 122 181 270 400"
+RANGE="99 122 148 181"
+#RANGE="5 7 11 16 25 37 55 81 122 181 270 400"
 #RANGE="1 2 3 4 5 6 7 9 11 13 16 20 25 30 37 45 55 67 81 99 122 148 181 221 270 330 400 500"
 
 for x in $RANGE; do
-  OD_DUMP_IMAGES_SUFFIX=$BASENAME $ENCODER_EXAMPLE -k 256 -z 10 -v $x $FILE -o $BASENAME.ogv 2> $BASENAME-$x-enc.out
+  OD_DUMP_IMAGES_SUFFIX=$BASENAME $ENCODER_EXAMPLE --no-dering -k 256 -z 10 -v $x $FILE -o $BASENAME.ogv 2> $BASENAME-$x-enc.out
   SIZE=$(wc -c $BASENAME.ogv | awk '{ print $1 }')
   $DUMP_PSNR $FILE 00000000out-$BASENAME.y4m > $BASENAME-psnr.out 2> /dev/null
   FRAMES=$(cat $BASENAME-psnr.out | grep ^0 | wc -l)
