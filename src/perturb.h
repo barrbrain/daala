@@ -14,7 +14,7 @@
 #define KD 0
 #define KE 0
 #define KF 0
-#define KG 0
+#define KG -1
 #define KH -1
 #define KI 0
 #define KJ 1
