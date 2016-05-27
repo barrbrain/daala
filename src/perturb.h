@@ -1,6 +1,6 @@
 #define K0 3
 #define K1 -4
-#define K2 1
+#define K2 2
 #define K3 2
 #define K4 0
 #define K5 -3
