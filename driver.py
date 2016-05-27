@@ -3,15 +3,20 @@ import os
 import subprocess
 import re
 
-def step(n):
-  if n == 0: return random.choice([-1, 1])
-  return n + (1, -1)[n < 0]
+def gensteps(lines):
+  for i in range(len(lines)):
+    v = int(lines[i][-1])
+    if v == 0:
+      yield (i, v - 1)
+      yield (i, v + 1)
+    else:
+      yield (i, v + (1, -1)[v < 0])
 
-def perturb():
+def perturb(step):
   with open('src/perturb.h', 'r') as f:
     lines = [l.split() for l in f.read().splitlines()]
-  choice = random.randrange(len(lines))
-  lines[choice][-1] = str(step(int(lines[choice][-1])))
+  choice, value = step
+  lines[choice][-1] = str(value)
   with open('src/perturb.h', 'w') as f:
     f.write('\n'.join([' '.join(l) for l in lines])+'\n')
   os.system('git add src/perturb.h')
@@ -23,17 +28,25 @@ def test(before, after):
   return better.search(rate.decode()) or 'PSNRHVS 0 0' in rate.decode()
   
 HEAD = subprocess.check_output('git rev-parse HEAD'.split()).decode().strip()
-os.system('make -j')
-os.system('./tools/rd_collect.sh daala ~/Downloads/subset3-mono/*.y4m')
-os.system('OUTPUT=%s ./tools/rd_average.sh *-daala.out' % HEAD)
-while True:
-  perturb()
-  os.system('make -j')
-  NEXT = subprocess.check_output('git rev-parse HEAD'.split()).decode().strip()
-  os.system('./tools/rd_collect.sh daala ~/Downloads/subset3-mono/*.y4m')
-  os.system('OUTPUT=%s ./tools/rd_average.sh *-daala.out' % NEXT)
-  if not test(HEAD+'.out', NEXT+'.out'):
-    os.system('git checkout HEAD^')
-    os.system('rm -v %s.out' % NEXT)
-  else:
-    HEAD = NEXT
+#os.system('make -j')
+#os.system('./tools/rd_collect.sh daala ~/Downloads/subset3-mono/*.y4m')
+#os.system('OUTPUT=%s ./tools/rd_average.sh *-daala.out' % HEAD)
+moving = True
+while moving:
+  with open('src/perturb.h', 'r') as f:
+    lines = [l.split() for l in f.read().splitlines()]
+  steps = [s for s in gensteps(lines)]
+  random.shuffle(steps)
+  moving = False
+  for step in steps:
+    perturb(step)
+    os.system('make -j')
+    NEXT = subprocess.check_output('git rev-parse HEAD'.split()).decode().strip()
+    os.system('./tools/rd_collect.sh daala ~/Downloads/subset3-mono/*.y4m')
+    os.system('OUTPUT=%s ./tools/rd_average.sh *-daala.out' % NEXT)
+    if not test(HEAD+'.out', NEXT+'.out'):
+      os.system('git checkout HEAD^')
+      os.system('rm -v %s.out' % NEXT)
+    else:
+      HEAD = NEXT
+      moving = True
