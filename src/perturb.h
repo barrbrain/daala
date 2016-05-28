@@ -17,5 +17,5 @@
 #define KG 0
 #define KH 0
 #define KI -1
-#define KJ 0
+#define KJ -1
 #define KK 1
