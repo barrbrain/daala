@@ -14,7 +14,7 @@
 #define KD 2
 #define KE 1
 #define KF -1
-#define KG -1
+#define KG -2
 #define KH 2
 #define KI 2
 #define KJ 3
