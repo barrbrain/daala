@@ -6,7 +6,7 @@
 #define K5 -1
 #define K6 7
 #define K7 6
-#define K8 6
+#define K8 7
 #define K9 -4
 #define KA -5
 #define KB 7
