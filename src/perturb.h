@@ -1,5 +1,5 @@
 #define K0 5
-#define K1 -6
+#define K1 -7
 #define K2 5
 #define K3 6
 #define K4 -7
