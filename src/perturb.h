@@ -16,6 +16,6 @@
 #define KF -1
 #define KG -2
 #define KH 6
-#define KI 6
+#define KI 7
 #define KJ 7
 #define KK 7
