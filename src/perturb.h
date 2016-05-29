@@ -17,5 +17,5 @@
 #define KG -4
 #define KH -1
 #define KI -4
-#define KJ -3
+#define KJ -4
 #define KK 1
