@@ -12,7 +12,7 @@
 #define KB -7
 #define KC -7
 #define KD -3
-#define KE 7
+#define KE 8
 #define KF 3
 #define KG -6
 #define KH -3
