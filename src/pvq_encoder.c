@@ -258,6 +258,8 @@ static void pvq_search_rdo_helper(int s, int n, int k, double *x, od_coeff *y,
         explicitly. */
     if (j == 1 && n <= 16) {
       double best_cost;
+      double best_xy;
+      double best_yy;
       for (i = 0; i < n; i++) {
         double delta_xy;
         double delta_yy;
@@ -274,9 +276,12 @@ static void pvq_search_rdo_helper(int s, int n, int k, double *x, od_coeff *y,
           rate = -OD_LOG2((cdf[i] - (i > 0 ? cdf[i - 1] : 0))/(double)cdf[n - 1]);
           OD_ASSERT(rate > 0);
         }
-        cost = -2*(xy + delta_xy)*norm_xx/sqrt(yy + delta_yy) + lambda*rate;
-        if (i == 0 || cost < best_cost) {
+        cost = 2 - 2*(xy + delta_xy)*norm_xx/sqrt(yy + delta_yy) + lambda*rate;
+        /*if (i == 0 || cost < best_cost) {*/
+        if (i == 0 || (xy + delta_xy)*best_yy > best_xy*(yy + delta_yy)) {
           best_cost = cost;
+          best_xy = xy + delta_xy;
+          best_yy = yy + delta_yy;
           pvq_dyn[d][s][1].rate = rate;
           pvq_dyn[d][s][1].xy = delta_xy;
           pvq_dyn[d][s][1].yy = delta_yy;
@@ -288,6 +293,8 @@ static void pvq_search_rdo_helper(int s, int n, int k, double *x, od_coeff *y,
         of length n/2. */
     else {
       double best_cost;
+      double best_xy;
+      double best_yy;
       for (i = 0; i <= j; i++) {
         double delta_xy;
         double delta_yy;
@@ -312,9 +319,12 @@ static void pvq_search_rdo_helper(int s, int n, int k, double *x, od_coeff *y,
           rate += shift;
         }
         rate += pvq_dyn[d + 1][s][j - i].rate + pvq_dyn[d + 1][s + mid][i].rate;
-        cost = -2*(xy + delta_xy)*norm_xx/sqrt(yy + delta_yy) + lambda*rate;
-        if (i == 0 || cost < best_cost) {
+        cost = 2 - 2*(xy + delta_xy)*norm_xx/sqrt(yy + delta_yy) + lambda*rate;
+        /*if (i == 0 || cost < best_cost) {*/
+        if (i == 0 || (xy + delta_xy)*best_yy > best_xy*(yy + delta_yy)) {
           best_cost = cost;
+          best_xy = xy + delta_xy;
+          best_yy = yy + delta_yy;
           pvq_dyn[d][s][j].rate = rate;
           pvq_dyn[d][s][j].xy = delta_xy;
           pvq_dyn[d][s][j].yy = delta_yy;
@@ -345,10 +355,16 @@ static int pvq_rdo_extract(int s, int n, int k, od_coeff *y, int d) {
   OD_ASSERT(m >= 0);
   mp = 0;
   if (k - m > 0) {
-    mp += pvq_rdo_extract(s, mid, k - m, y, d + 1);
+    int ml;
+    ml = pvq_rdo_extract(s, mid, k - m, y, d + 1);
+    OD_ASSERT(ml == k - m);
+    mp += ml;
   }
   if (m > 0) {
-    mp += pvq_rdo_extract(s + mid, n - mid, m, y, d + 1);
+    int mr;
+    mr = pvq_rdo_extract(s + mid, n - mid, m, y, d + 1);
+    OD_ASSERT(mr == m);
+    mp += mr;
   }
   return mp;
 }
