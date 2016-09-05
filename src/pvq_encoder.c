@@ -233,8 +233,8 @@ static void pvq_search_rdo_helper(int s, int n, int k, double *x, od_coeff *y,
   if (n <= 1) {
     for (j = 0; j <= k; j++) {
       pvq_dyn[d][s][j].rate = 0;
-      pvq_dyn[d][s][j].xy = 0;
-      pvq_dyn[d][s][j].yy = 0;
+      pvq_dyn[d][s][j].xy = k*x[s];
+      pvq_dyn[d][s][j].yy = 2*k*y[s] + k*k;
       pvq_dyn[d][s][j].split = -1;
     }
     return;
