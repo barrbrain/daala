@@ -222,6 +222,27 @@ struct pvq_dist {
     and N + 1 = 129 ways we can allocate pulses to allocate to a coefficient. */
 static pvq_dist pvq_dyn[8][128][129];
 
+static int pvq_dist_query(int s, int n, int k, int d, int q) {
+  while (k > 0 && n != 1 && !(k == 1 && n <= 16)) {
+    int mid;
+    int m;
+    mid = n >> 1;
+    m = pvq_dyn[d++][s][k].state;
+    if (q < s + mid) {
+      n = mid;
+      k -= m;
+    }
+    else {
+      s += mid;
+      n -= mid;
+      k = m;
+    }
+  }
+  if (k == 0) return 0;
+  if (n == 1) return k;
+  return (q == s + pvq_dyn[d][s][1].state);
+}
+
 /* Allocate all k pulses at once such that the shape distortion between the
     input vector x and the codeword vector y is minimized. */
 static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
@@ -258,6 +279,7 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
   pvq_dyn[d][s][0].state = -1;
   for (p = 1; p <= k; p++) {
     int i;
+    int j;
     double best_cost;
     /* When placing 1 pulse in a vector of length <= 16, we code the location
         explicitly. */
@@ -278,16 +300,25 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
     /* Consider all possible ways to split the 0 to k pulses into two vectors
         of length n/2. */
     else {
+      int j_pulse;
+      best_cost = -1;
       for (i = 0; i <= p; i++) {
-        delta_xy = pvq_dyn[d + 1][s][p - i].xy + pvq_dyn[d + 1][s + mid][i].xy;
-        delta_yy = pvq_dyn[d + 1][s][p - i].yy + pvq_dyn[d + 1][s + mid][i].yy;
-        cost = (xy + delta_xy)*norm_xx/sqrt(yy + delta_yy);
-        if (i == 0 || cost > best_cost) {
-          best_cost = cost;
-          pvq_dyn[d][s][p].cost = cost;
-          pvq_dyn[d][s][p].xy = delta_xy;
-          pvq_dyn[d][s][p].yy = delta_yy;
-          pvq_dyn[d][s][p].state = i;
+        for (j = 0; j < n; j++) {
+          if (j < mid && p == i || j >= mid && i == 0) continue;
+          j_pulse = j < mid ? pvq_dist_query(s, mid, p - i - 1, d + 1, s + j)
+                            : pvq_dist_query(s + mid, n - mid, i - 1, d + 1, s + j);
+          delta_xy = pvq_dyn[d + 1][s][p - i - (j<mid)].xy + pvq_dyn[d + 1][s + mid][i - !(j<mid)].xy;
+          delta_yy = pvq_dyn[d + 1][s][p - i - (j<mid)].yy + pvq_dyn[d + 1][s + mid][i - !(j<mid)].yy;
+          delta_xy += x[s + j];
+          delta_yy += 2*y[s + j] + 2*j_pulse + 1;
+          cost = (xy + delta_xy)*norm_xx/sqrt(yy + delta_yy);
+          if (cost > best_cost) {
+            best_cost = cost;
+            pvq_dyn[d][s][p].cost = cost;
+            pvq_dyn[d][s][p].xy = delta_xy;
+            pvq_dyn[d][s][p].yy = delta_yy;
+            pvq_dyn[d][s][p].state = i;
+          }
         }
       }
     }
