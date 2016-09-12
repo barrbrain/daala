@@ -287,16 +287,15 @@ static void pvq_search_dist_merge(int d, int s, int n, int p, int i,
 
 static void pvq_dist_print(int s, int n, int k, int l, int d);
 
-static void check_next(int s, int n, int p, int d, od_coeff *y) {
+static void check_next(int s, int n, int p, int d, double * x, od_coeff *y, double xy, double yy) {
   static long long pve, nve;
   int yp;
   int i;
-  double delta_xy;
-  double delta_yy;
+  double delta_xy = pvq_dyn[d][s][p].next_xy;
+  double delta_yy = pvq_dyn[d][s][p].next_yy;
   i = pvq_dyn[d][s][p].next;
   yp = pvq_dist_query(s, n, p, d, s + i);
-  delta_xy = pvq_dyn[d][s][p].next_xy;
-  delta_yy = pvq_dyn[d][s][p].next_yy;
+#if 0
   if (delta_yy != pvq_dyn[d][s][p].yy + 2*y[s+i] + 2*yp + 1) {
     pve++;
     fprintf(stderr, "!!![yy] next_yy:%f ref:%f yy:%f y:%d p:%d i:%d\n", delta_yy, pvq_dyn[d][s][p].yy + 2*y[s+i] + 2*yp + 1, pvq_dyn[d][s][p].yy, y[s+i], yp, i);
@@ -306,6 +305,25 @@ static void check_next(int s, int n, int p, int d, od_coeff *y) {
     fprintf(stderr, "\n");
   }
   else nve++;
+#endif
+  delta_xy += xy;
+  delta_yy += yy;
+  delta_xy *= delta_xy;
+  for (i = 0; i < n; i++) {
+    double tmp_xy;
+    double tmp_yy;
+    yp = pvq_dist_query(s, n, p, d, s + i);
+    tmp_xy = xy + pvq_dyn[d][s][p].xy + x[s + i];
+    tmp_yy = yy + pvq_dyn[d][s][p].yy + 2*y[s + i] + 2*yp + 1;
+    tmp_xy *= tmp_xy;
+    if (tmp_xy*delta_yy > delta_xy*tmp_yy) {
+      pve++;
+      fprintf(stderr, "pulse [%d] is better than pulse [%d] (%f%%)\n", i, pvq_dyn[d][s][p].next, 100.*pve/(pve+nve));
+      nve--;
+      break;
+    }
+    nve++;
+  }
 }
 
 /* Allocate all k pulses at once such that the shape distortion between the
@@ -317,6 +335,7 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
   double delta_yy;
   double cost;
   int mid;
+  static long long pve, nve;
   OD_ASSERT(k > 0);
   if (n == 1) {
     for (p = 0; p <= k; p++) {
@@ -421,11 +440,11 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
           best_cost = cost;
           pvq_search_dist_merge(d, s, n, p, i, xy, yy, norm_xx, delta_xy, delta_yy, x, y);
         }
-#if 0
-        check_next(s, n, p, d, y);
+#if 1
+        check_next(s, n, p, d, x, y, xy, yy);
 #endif
       }
-      if (p > 1) {
+      if (0 && p > 1) {
         delta_xy = pvq_dyn[d][s][p - 1].next_xy;
         delta_yy = pvq_dyn[d][s][p - 1].next_yy;
         cost = (xy + delta_xy)*norm_xx/sqrt(yy + delta_yy);
