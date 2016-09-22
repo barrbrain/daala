@@ -3067,6 +3067,7 @@ static int od_encode_frame(daala_enc_ctx *enc, daala_image *img, int frame_type,
     else od_split_superblocks(enc, mbctx.is_keyframe);
   }
   od_encode_coefficients(enc, &mbctx, OD_ENCODE_REAL);
+  fprintf(stderr, "\n");
   /*Perform rate mangement update here before we flush anything to output
      buffers.
     We may need to press the panic button and drop the frame to avoid busting
