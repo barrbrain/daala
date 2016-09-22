@@ -285,7 +285,7 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
       const int i_pred[6] = { 0, 1, 2, -1, 3, -2 };
       int best_i = last_i;
       best_cost = 0;
-      for (ii = 0; ii < 6; ii++) {
+      for (ii = 0; ii < 4; ii++) {
         i = last_i + i_pred[ii];
         if (i < 0 || i > p) continue;
         delta_xy = pvq_dyn[d + 1][s][p - i].xy + pvq_dyn[d + 1][s + mid][i].xy;
