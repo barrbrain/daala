@@ -213,6 +213,7 @@ struct pvq_dist {
   double cost;
   double xy;
   double yy;
+  od_coeff l1;
   int state;
 };
 
@@ -240,6 +241,7 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
       pvq_dyn[d][s][p].cost = cost;
       pvq_dyn[d][s][p].xy = delta_xy;
       pvq_dyn[d][s][p].yy = delta_yy;
+      pvq_dyn[d][s][p].l1 = y[s] + p;
       pvq_dyn[d][s][p].state = -1;
     }
     return;
@@ -255,10 +257,12 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
   pvq_dyn[d][s][0].cost = 0;
   pvq_dyn[d][s][0].xy = 0;
   pvq_dyn[d][s][0].yy = 0;
+  pvq_dyn[d][s][0].l1 = pvq_dyn[d + 1][s][0].l1 + pvq_dyn[d + 1][s + mid][0].l1;
   pvq_dyn[d][s][0].state = -1;
   for (p = 1; p <= k; p++) {
     int i;
     double best_cost;
+    const od_coeff l1 = pvq_dyn[d][s][0].l1 + p;
     /* When placing 1 pulse in a vector of length <= 16, we code the location
         explicitly. */
     if (p == 1 && n <= 16) {
@@ -271,6 +275,7 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
           pvq_dyn[d][s][1].cost = cost;
           pvq_dyn[d][s][1].xy = delta_xy;
           pvq_dyn[d][s][1].yy = delta_yy;
+          pvq_dyn[d][s][1].l1 = l1;
           pvq_dyn[d][s][1].state = i;
         }
       }
@@ -287,6 +292,7 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
           pvq_dyn[d][s][p].cost = cost;
           pvq_dyn[d][s][p].xy = delta_xy;
           pvq_dyn[d][s][p].yy = delta_yy;
+          pvq_dyn[d][s][p].l1 = l1;
           pvq_dyn[d][s][p].state = i;
         }
       }
