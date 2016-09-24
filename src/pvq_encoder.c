@@ -227,7 +227,7 @@ static pvq_dist pvq_dyn[8][128][129];
 /* Allocate all k pulses at once such that the shape distortion between the
     input vector x and the codeword vector y is minimized. */
 static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
- double xy, double yy, double norm_xx, int d, const od_adapt_ctx *adapt) {
+ double xy, double yy, double norm_xx, int d, const od_adapt_ctx *adapt, double lambda) {
   int p;
   double delta_xy;
   double delta_yy;
@@ -252,8 +252,8 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
   mid = n >> 1;
   /* Compute the distortion optimal allocation for 0 to k pulses for both
       sides of the vector of n coefficients. */
-  pvq_search_dist_helper(s, mid, k, x, y, xy, yy, norm_xx, d + 1, adapt);
-  pvq_search_dist_helper(s + mid, n - mid, k, x, y, xy, yy, norm_xx, d + 1, adapt);
+  pvq_search_dist_helper(s, mid, k, x, y, xy, yy, norm_xx, d + 1, adapt, lambda);
+  pvq_search_dist_helper(s + mid, n - mid, k, x, y, xy, yy, norm_xx, d + 1, adapt, lambda);
   /* Update pvq_dyn with the optimal allocation of each of the 0 to k pulses
       for the entire vector of n coefficients.
      When placing 0 pulses, both delta rate and distortion are zero. */
@@ -336,6 +336,9 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
           rate += shift;
           rate += pvq_dyn[d + 1][s][i < mid].rate + pvq_dyn[d + 1][s + mid][i >= mid].rate;
         }
+	if (d == 0 && l1 <= n) {
+	  cost -= lambda * rate;
+	}
         if (i == 0 || cost > best_cost) {
           best_cost = cost;
           pvq_dyn[d][s][1].cost = cost;
@@ -371,6 +374,9 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
           rate += shift;
         }
         rate += pvq_dyn[d + 1][s][p - i].rate + pvq_dyn[d + 1][s + mid][i].rate;
+	if (d == 0 && l1 <= n) {
+	  cost -= lambda * rate;
+	}
         if (i == 0 || cost > best_cost) {
           best_cost = cost;
           pvq_dyn[d][s][p].cost = cost;
@@ -423,7 +429,8 @@ static void pvq_dist_print(int s, int n, int k, int l, int d) {
   }
 }
 
-double pvq_search_dist(const od_val16 *xcoeff, int n, int k, od_coeff *y, const od_adapt_ctx *adapt) {
+double pvq_search_dist(const od_val16 *xcoeff, int n, int k, od_coeff *y,
+ const od_adapt_ctx *adapt, double g2, double pvq_norm_lambda) {
   int i;
   int m;
   double x[MAXN];
@@ -457,7 +464,7 @@ double pvq_search_dist(const od_val16 *xcoeff, int n, int k, od_coeff *y, const 
   if (k - m > 0) {
     double norm_xx;
     norm_xx = 1./sqrt(1e-30 + xx);
-    pvq_search_dist_helper(0, n, k - m, x, y, xy, yy, norm_xx, 0, adapt);
+    pvq_search_dist_helper(0, n, k - m, x, y, xy, yy, norm_xx, 0, adapt, pvq_norm_lambda/g2);
     pvq_dist_extract(0, n, k - m, y, 0);
     xy += pvq_dyn[0][0][k - m].xy;
     yy += pvq_dyn[0][0][k - m].yy;
@@ -785,7 +792,8 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
       }
       else if (k != prev_k) {
 #if PVQ_RDO_NEW
-        cos_dist = pvq_search_dist(xr, n - 1, k, y_tmp, adapt);
+        cos_dist = pvq_search_dist(xr, n - 1, k, y_tmp, adapt,
+         qcg*(double)cg*sin_prod*OD_CGAIN_SCALE_2, pvq_norm_lambda);
 #else
         cos_dist = pvq_search_rdo_double(xr, n - 1, k, y_tmp,
          qcg*(double)cg*sin_prod*OD_CGAIN_SCALE_2, pvq_norm_lambda, prev_k);
@@ -837,7 +845,8 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
       dist *= OD_CGAIN_SCALE_2;
       if (dist > dist0 && k != 0) continue;
 #if PVQ_RDO_NEW
-      cos_dist = pvq_search_dist(x16, n, k, y_tmp, adapt);
+      cos_dist = pvq_search_dist(x16, n, k, y_tmp, adapt,
+       qcg*(double)cg*OD_CGAIN_SCALE_2, pvq_norm_lambda);
 #else
       cos_dist = pvq_search_rdo_double(x16, n, k, y_tmp,
        qcg*(double)cg*OD_CGAIN_SCALE_2, pvq_norm_lambda, prev_k);
