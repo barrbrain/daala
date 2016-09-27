@@ -337,6 +337,7 @@ double pvq_search_dist(const od_val16 *xcoeff, int n, int k, od_coeff *y) {
   int m;
   double x[MAXN];
   double xx, xy, yy;
+  int rdo_pulses;
   xx = xy = yy = 0;
   for (i = 0; i < n; i++) {
     x[i] = fabs((float)xcoeff[i]);
@@ -362,6 +363,34 @@ double pvq_search_dist(const od_val16 *xcoeff, int n, int k, od_coeff *y) {
     }
   }
   else OD_CLEAR(y, n);
+  /* Only use RDO on the last few pulses. This not only saves CPU, but using
+     RDO on all pulses actually makes the results worse for reasons I don't
+     fully understand. */
+  rdo_pulses = 1 + k/4;
+  /* Search one pulse at a time */
+  for (; m < k - rdo_pulses; m++) {
+    int pos;
+    double best_xy;
+    double best_yy;
+    pos = 0;
+    best_xy = -10;
+    best_yy = 1;
+    for (i = 0; i < n; i++) {
+      double tmp_xy;
+      double tmp_yy;
+      tmp_xy = xy + x[i];
+      tmp_yy = yy + 2*y[i] + 1;
+      tmp_xy *= tmp_xy;
+      if (i == 0 || tmp_xy*best_yy > best_xy*tmp_yy) {
+        best_xy = tmp_xy;
+        best_yy = tmp_yy;
+        pos = i;
+      }
+    }
+    xy = xy + x[pos];
+    yy = yy + 2*y[pos] + 1;
+    y[pos]++;
+  }
   /* We are guaranteed to have at most n pulses to place. */
   if (k - m > 0) {
     double norm_xx;
