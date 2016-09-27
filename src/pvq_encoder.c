@@ -214,13 +214,14 @@ struct pvq_dist {
   double xy;
   double yy;
   int state;
+  unsigned char y[128];
 };
 
 /* We only need the upper triangular portion of this matrix.
    In the worst case, for the largest band N = 128, we have log_2(N) = 7 layers
     of recursion to consider, N = 128 coefficients we can allocate pulses to,
     and N + 1 = 129 ways we can allocate pulses to allocate to a coefficient. */
-static pvq_dist pvq_dyn[8][128][129];
+static pvq_dist pvq_dyn[129][129];
 
 /* Allocate all k pulses at once such that the shape distortion between the
     input vector x and the codeword vector y is minimized. */
@@ -232,62 +233,36 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
   double cost;
   int mid;
   OD_ASSERT(k > 0);
-  if (n == 1) {
-    for (p = 0; p <= k; p++) {
-      delta_xy = p*x[s];
-      delta_yy = 2*p*y[s] + p*p;
-      cost = (xy + delta_xy)*norm_xx/sqrt(yy + delta_yy);
-      pvq_dyn[d][s][p].cost = cost;
-      pvq_dyn[d][s][p].xy = delta_xy;
-      pvq_dyn[d][s][p].yy = delta_yy;
-      pvq_dyn[d][s][p].state = -1;
-    }
-    return;
-  }
+  OD_ASSERT(s == 0);
+  OD_ASSERT(d == 0);
   mid = n >> 1;
-  /* Compute the distortion optimal allocation for 0 to k pulses for both
-      sides of the vector of n coefficients. */
-  pvq_search_dist_helper(s, mid, k, x, y, xy, yy, norm_xx, d + 1);
-  pvq_search_dist_helper(s + mid, n - mid, k, x, y, xy, yy, norm_xx, d + 1);
-  /* Update pvq_dyn with the optimal allocation of each of the 0 to k pulses
-      for the entire vector of n coefficients.
-     When placing 0 pulses, both delta rate and distortion are zero. */
-  pvq_dyn[d][s][0].cost = 0;
-  pvq_dyn[d][s][0].xy = 0;
-  pvq_dyn[d][s][0].yy = 0;
-  pvq_dyn[d][s][0].state = -1;
   for (p = 1; p <= k; p++) {
     int i;
-    double best_cost;
-    /* When placing 1 pulse in a vector of length <= 16, we code the location
-        explicitly. */
-    if (p == 1 && n <= 16) {
-      for (i = 0; i < n; i++) {
-        delta_xy = x[s + i];
-        delta_yy = 2*y[s + i] + 1;
+    for (i = 0; i <= p; i++) {
+      double best_cost = -9000;
+      int j;
+      for (j = 0; j < n; j++) {
+        int l = p - i - (j < mid);
+	int r = i - (j >= mid);
+	if (l == 0 && r == 0) {
+          delta_xy = x[j];
+          delta_yy = 2*y[j]+1;
+	}
+	else if (l < 0 || r < 0) continue;
+	else {
+          delta_xy = pvq_dyn[l][r].xy + x[j];
+          delta_yy = pvq_dyn[l][r].yy + 2*y[j]+ 2*pvq_dyn[l][r].y[j]+1;
+	}
         cost = (xy + delta_xy)*norm_xx/sqrt(yy + delta_yy);
-        if (i == 0 || cost > best_cost) {
+        if (cost > best_cost) {
           best_cost = cost;
-          pvq_dyn[d][s][1].cost = cost;
-          pvq_dyn[d][s][1].xy = delta_xy;
-          pvq_dyn[d][s][1].yy = delta_yy;
-          pvq_dyn[d][s][1].state = i;
-        }
-      }
-    }
-    /* Consider all possible ways to split the 0 to k pulses into two vectors
-        of length n/2. */
-    else {
-      for (i = 0; i <= p; i++) {
-        delta_xy = pvq_dyn[d + 1][s][p - i].xy + pvq_dyn[d + 1][s + mid][i].xy;
-        delta_yy = pvq_dyn[d + 1][s][p - i].yy + pvq_dyn[d + 1][s + mid][i].yy;
-        cost = (xy + delta_xy)*norm_xx/sqrt(yy + delta_yy);
-        if (i == 0 || cost > best_cost) {
-          best_cost = cost;
-          pvq_dyn[d][s][p].cost = cost;
-          pvq_dyn[d][s][p].xy = delta_xy;
-          pvq_dyn[d][s][p].yy = delta_yy;
-          pvq_dyn[d][s][p].state = i;
+          pvq_dyn[p - i][i].cost = cost;
+          pvq_dyn[p - i][i].xy = delta_xy;
+          pvq_dyn[p - i][i].yy = delta_yy;
+          pvq_dyn[p - i][i].state = j;
+          pvq_dyn[p - i][i].state = j;
+          OD_COPY(pvq_dyn[p - i][i].y, pvq_dyn[l][r].y, n);
+          pvq_dyn[p - i][i].y[j]++;
         }
       }
     }
@@ -295,41 +270,27 @@ static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
 }
 
 static int pvq_dist_extract(int s, int n, int k, od_coeff *y, int d) {
-  if (n == 1) {
-    y[s] += k;
-  }
-  else if (k == 1 && n <= 16) {
-    y[s + pvq_dyn[d][s][1].state]++;
-  }
-  else {
-    int mid;
-    int m;
-    mid = n >> 1;
-    m = pvq_dyn[d][s][k].state;
-    if (mid > 0 && k - m > 0) pvq_dist_extract(s, mid, k - m, y, d + 1);
-    if (n - mid > 0 && m > 0) pvq_dist_extract(s + mid, n - mid, m, y, d + 1);
-  }
-  return k;
-}
-
-static void pvq_dist_print(int s, int n, int k, int l, int d) {
-  if (d == l) {
-    int p;
-    fprintf(stdout, " s = %i : [\n", s);
-    for (p = 0; p <= k; p++) {
-      pvq_dist *dist;
-      dist = &pvq_dyn[d][s][p];
-      fprintf(stdout, "  p = %i : [ cost = %f, xy = %f, yy = %f, state = %i ]\n",
-       p, dist->cost, dist->xy, dist->yy, dist->state);
+  double best_cost;
+  int j;
+  int i;
+  int mid = n >> 1;
+  OD_ASSERT(s == 0);
+  OD_ASSERT(d == 0);
+  best_cost = pvq_dyn[k][0].cost;
+  i = 0;
+  for (j = 1; j <= k; j++) {
+    if (pvq_dyn[k - j][j].cost > best_cost) {
+      best_cost = pvq_dyn[k - j][j].cost;
+      i = j;
     }
-    fprintf(stdout, " ]\n");
   }
-  else {
-    int mid;
-    mid = n >> 1;
-    if (mid > 0) pvq_dist_print(s, mid, k, l, d + 1);
-    if (n - mid > 0) pvq_dist_print(s + mid, n - mid, k, l, d + 1);
+  j = i;
+  while (k > 0) {
+    y[pvq_dyn[k - i][i].state]++;
+    i -= (pvq_dyn[k - i][i].state >= mid);
+    k--;
   }
+  return j;
 }
 
 double pvq_search_dist(const od_val16 *xcoeff, int n, int k, od_coeff *y) {
@@ -396,9 +357,9 @@ double pvq_search_dist(const od_val16 *xcoeff, int n, int k, od_coeff *y) {
     double norm_xx;
     norm_xx = 1./sqrt(1e-30 + xx);
     pvq_search_dist_helper(0, n, k - m, x, y, xy, yy, norm_xx, 0);
-    pvq_dist_extract(0, n, k - m, y, 0);
-    xy += pvq_dyn[0][0][k - m].xy;
-    yy += pvq_dyn[0][0][k - m].yy;
+    i = pvq_dist_extract(0, n, k - m, y, 0);
+    xy += pvq_dyn[k - m - i][i].xy;
+    yy += pvq_dyn[k - m - i][i].yy;
   }
   for (i = 0; i < n; i++) {
     if (xcoeff[i] < 0) y[i] = -y[i];
