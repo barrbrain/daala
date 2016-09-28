@@ -75,6 +75,15 @@ static void od_fill_dynamic_rsqrt_table(double *table, const int table_size,
     table[i] = od_rsqrt_table(start + 2*i + 1);
 }
 
+static double od_pvq_codeword_rate(int k, int n, double sum) {
+    double f;
+    f = sum/(k*n);
+    /* Estimates the number of bits it will cost to encode K pulses in
+       N dimensions based on hand-tuned fit for bitrate vs K, N and
+       "center of mass". */
+    return (1 + .4*f)*n*OD_LOG2(1 + OD_MAXF(0, log(n*2*(1*f + .025))*k/n)) + 3;
+}
+
 /** Find the codepoint on the given PSphere closest to the desired
  * vector. Double-precision PVQ search just to make sure our tests
  * aren't limited by numerical accuracy.
@@ -252,15 +261,10 @@ static double od_pvq_rate(int qg, int icgr, int theta, int ts,
   else if (speed > 0) {
     int i;
     int sum;
-    double f;
     /* Compute "center of mass" of the pulse vector. */
     sum = 0;
     for (i = 0; i < n - (theta != -1); i++) sum += i*abs(y0[i]);
-    f = sum/(double)(k*n);
-    /* Estimates the number of bits it will cost to encode K pulses in
-       N dimensions based on hand-tuned fit for bitrate vs K, N and
-       "center of mass". */
-    rate = (1 + .4*f)*n*OD_LOG2(1 + OD_MAXF(0, log(n*2*(1*f + .025))*k/n)) + 3;
+    rate = od_pvq_codeword_rate(k, n, sum);
   }
   else {
     od_ec_enc ec;
