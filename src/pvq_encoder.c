@@ -213,6 +213,7 @@ struct pvq_dist {
   double cost;
   double xy;
   double yy;
+  int mass;
   int state;
   unsigned char y[128];
 };
@@ -226,40 +227,52 @@ static pvq_dist pvq_dyn[129][129];
 /* Allocate all k pulses at once such that the shape distortion between the
     input vector x and the codeword vector y is minimized. */
 static void pvq_search_dist_helper(int s, int n, int k, double *x, od_coeff *y,
- double xy, double yy, double norm_xx, int d) {
+ double xy, double yy, double norm_xx, int d, double lambda) {
   int p;
   double delta_xy;
   double delta_yy;
   double cost;
+  int mass;
+  int l1;
   int mid;
   OD_ASSERT(k > 0);
   OD_ASSERT(s == 0);
   OD_ASSERT(d == 0);
   mid = n >> 1;
+
+  pvq_dyn[0][0].cost = 0;
+  pvq_dyn[0][0].xy = 0;
+  pvq_dyn[0][0].yy = 0;
+  pvq_dyn[0][0].state = -1;
+  for (mass = 0, l1 = 0, p = 0; p < n; p++) mass += y[p]*p, l1 += y[p];
+  pvq_dyn[0][0].mass = mass;
+
   for (p = 1; p <= k; p++) {
     int i;
     for (i = 0; i <= p; i++) {
       double best_cost = -9000;
       int j;
       for (j = 0; j < n; j++) {
+        double f;
+        double rate;
         int l = p - i - (j < mid);
 	int r = i - (j >= mid);
-	if (l == 0 && r == 0) {
-          delta_xy = x[j];
-          delta_yy = 2*y[j]+1;
-	}
-	else if (l < 0 || r < 0) continue;
-	else {
-          delta_xy = pvq_dyn[l][r].xy + x[j];
-          delta_yy = pvq_dyn[l][r].yy + 2*y[j]+ 2*pvq_dyn[l][r].y[j]+1;
-	}
-        cost = (xy + delta_xy)*norm_xx/sqrt(yy + delta_yy);
+	if (l < 0 || r < 0) continue;
+        delta_xy = pvq_dyn[l][r].xy + x[j];
+        delta_yy = pvq_dyn[l][r].yy + 2*y[j]+ 2*pvq_dyn[l][r].y[j]+1;
+        mass = pvq_dyn[l][r].mass + j;
+        f = mass/(double)((l1 + p)*n);
+        /* Estimates the number of bits it will cost to encode K pulses in
+           N dimensions based on hand-tuned fit for bitrate vs K, N and
+           "center of mass". */
+        rate = (1 + .4*f)*n*OD_LOG2(1 + OD_MAXF(0, log(n*2*(1*f + .025))*(l1 + p)/n)) + 3;
+        cost = (xy + delta_xy)*norm_xx/sqrt(yy + delta_yy) - lambda*rate;
         if (cost > best_cost) {
           best_cost = cost;
           pvq_dyn[p - i][i].cost = cost;
           pvq_dyn[p - i][i].xy = delta_xy;
           pvq_dyn[p - i][i].yy = delta_yy;
-          pvq_dyn[p - i][i].state = j;
+          pvq_dyn[p - i][i].mass = mass;
           pvq_dyn[p - i][i].state = j;
           OD_COPY(pvq_dyn[p - i][i].y, pvq_dyn[l][r].y, n);
           pvq_dyn[p - i][i].y[j]++;
@@ -293,7 +306,7 @@ static int pvq_dist_extract(int s, int n, int k, od_coeff *y, int d) {
   return j;
 }
 
-double pvq_search_dist(const od_val16 *xcoeff, int n, int k, od_coeff *y) {
+double pvq_search_dist(const od_val16 *xcoeff, int n, int k, od_coeff *y, double g2, double pvq_norm_lambda) {
   int i;
   int m;
   double x[MAXN];
@@ -355,8 +368,10 @@ double pvq_search_dist(const od_val16 *xcoeff, int n, int k, od_coeff *y) {
   /* We are guaranteed to have at most n pulses to place. */
   if (k - m > 0) {
     double norm_xx;
+    double lambda;
     norm_xx = 1./sqrt(1e-30 + xx);
-    pvq_search_dist_helper(0, n, k - m, x, y, xy, yy, norm_xx, 0);
+    lambda = pvq_norm_lambda/(1e-30 + g2);
+    pvq_search_dist_helper(0, n, k - m, x, y, xy, yy, norm_xx, 0, lambda);
     i = pvq_dist_extract(0, n, k - m, y, 0);
     xy += pvq_dyn[k - m - i][i].xy;
     yy += pvq_dyn[k - m - i][i].yy;
@@ -684,7 +699,8 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
       }
       else if (k != prev_k) {
 #if PVQ_RDO_NEW
-        cos_dist = pvq_search_dist(xr, n - 1, k, y_tmp);
+        cos_dist = pvq_search_dist(xr, n - 1, k, y_tmp,
+         qcg*(double)cg*sin_prod*OD_CGAIN_SCALE_2, pvq_norm_lambda);
 #else
         cos_dist = pvq_search_rdo_double(xr, n - 1, k, y_tmp,
          qcg*(double)cg*sin_prod*OD_CGAIN_SCALE_2, pvq_norm_lambda, prev_k);
@@ -736,7 +752,8 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
       dist *= OD_CGAIN_SCALE_2;
       if (dist > dist0 && k != 0) continue;
 #if PVQ_RDO_NEW
-      cos_dist = pvq_search_dist(x16, n, k, y_tmp);
+      cos_dist = pvq_search_dist(x16, n, k, y_tmp,
+       qcg*(double)cg*OD_CGAIN_SCALE_2, pvq_norm_lambda);
 #else
       cos_dist = pvq_search_rdo_double(x16, n, k, y_tmp,
        qcg*(double)cg*OD_CGAIN_SCALE_2, pvq_norm_lambda, prev_k);
