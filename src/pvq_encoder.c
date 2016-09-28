@@ -91,7 +91,7 @@ static void od_fill_dynamic_rqrt_table(double *table, const int table_size,
  * @return                  cosine distance between x and y (between 0 and 1)
  */
 static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
- od_coeff *ypulse, double g2, double pvq_norm_lambda, int prev_k) {
+ od_coeff *ypulse, int theta, double g2, double pvq_norm_lambda, int prev_k) {
   int i, j;
   double xy;
   double yy;
@@ -103,6 +103,7 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
   double norm_1;
   int rdo_pulses;
   double delta_rate;
+  int sum;
   xx = xy = yy = 0;
   for (j = 0; j < n; j++) {
     x[j] = fabs((float)xcoeff[j]);
@@ -111,6 +112,7 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
   norm_1 = 1./sqrt(1e-30 + xx);
   lambda = pvq_norm_lambda/(1e-30 + g2);
   i = 0;
+  sum = 0;
   if (prev_k > 0 && prev_k <= k) {
     /* We reuse pulses from a previous search so we don't have to search them
        again. */
@@ -119,6 +121,7 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
       xy += x[j]*ypulse[j];
       yy += ypulse[j]*ypulse[j];
       i += ypulse[j];
+      sum += j*ypulse[j];
     }
   }
   else if (k > 2) {
@@ -134,6 +137,7 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
       xy += x[j]*ypulse[j];
       yy += ypulse[j]*ypulse[j];
       i += ypulse[j];
+      sum += j*ypulse[j];
     }
   }
   else OD_CLEAR(ypulse, n);
@@ -142,9 +146,6 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
      RDO on all pulses actually makes the results worse for reasons I don't
      fully understand. */
   rdo_pulses = 1 + k/4;
-  /* Rough assumption for now, the last position costs about 3 bits more than
-     the first. */
-  delta_rate = 3./n;
   /* Search one pulse at a time */
   for (; i < k - rdo_pulses; i++) {
     int pos;
@@ -167,6 +168,7 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
     }
     xy = xy + x[pos];
     yy = yy + 2*ypulse[pos] + 1;
+    sum += pos;
     ypulse[pos]++;
   }
   /* Search last pulses with RDO. Distortion is D = (x-y)^2 = x^2 - 2*x*y + y^2
@@ -178,12 +180,26 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
     int rsqrt_table_size = 4;
     int pos;
     double best_cost;
+    double rate;
+    double f;
+    int N;
+    int K;
+    K = i + 1;
+    N = n + (theta != -1);
     pos = 0;
     best_cost = -1e5;
     /*Fill the small rsqrt lookup table with inputs relative to yy.
       Specifically, the table of n values is filled with
        rsqrt(yy + 1), rsqrt(yy + 2 + 1) .. rsqrt(yy + 2*(n-1) + 1).*/
     od_fill_dynamic_rqrt_table(rsqrt_table, rsqrt_table_size, yy);
+    /* Estimates the number of bits it will cost to encode K pulses in
+       N dimensions based on hand-tuned fit for bitrate vs K, N and
+       "center of mass". */
+    f = sum/(double)(K*N);
+    rate = (1 + .4*f)*N*OD_LOG2(1 + OD_MAXF(0, log(N*2*(1*f + .025))*K/N)) + 3;
+    f = (sum + n - 1)/(double)(K*N);
+    delta_rate = (1 + .4*f)*N*OD_LOG2(1 + OD_MAXF(0, log(N*2*(1*f + .025))*K/N)) + 3 - rate;
+    delta_rate /= n - 1;
     for (j = 0; j < n; j++) {
       double tmp_xy;
       double tmp_yy;
@@ -199,6 +215,7 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
     }
     xy = xy + x[pos];
     yy = yy + 2*ypulse[pos] + 1;
+    sum += pos;
     ypulse[pos]++;
   }
   for (i = 0; i < n; i++) {
@@ -521,7 +538,7 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
         OD_CLEAR(y_tmp, n-1);
       }
       else if (k != prev_k) {
-        cos_dist = pvq_search_rdo_double(xr, n - 1, k, y_tmp,
+        cos_dist = pvq_search_rdo_double(xr, n - 1, k, y_tmp, j,
          qcg*(double)cg*sin_prod*OD_CGAIN_SCALE_2, pvq_norm_lambda, prev_k);
       }
       prev_k = k;
@@ -568,7 +585,7 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
       dist = gain_weight*(qcg - cg)*(qcg - cg);
       dist *= OD_CGAIN_SCALE_2;
       if (dist > dist0 && k != 0) continue;
-      cos_dist = pvq_search_rdo_double(x16, n, k, y_tmp,
+      cos_dist = pvq_search_rdo_double(x16, n, k, y_tmp, -1,
        qcg*(double)cg*OD_CGAIN_SCALE_2, pvq_norm_lambda, prev_k);
       prev_k = k;
       /* See Jmspeex' Journal of Dubious Theoretical Results. */
