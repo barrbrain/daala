@@ -75,6 +75,15 @@ static void od_fill_dynamic_rqrt_table(double *table, const int table_size,
     table[i] = od_rsqrt_table(start + 2*i + 1);
 }
 
+static double od_pvq_codeword_rate(int k, int n, double sum) {
+    double f;
+    f = sum/(k*n);
+    /* Estimates the number of bits it will cost to encode K pulses in
+       N dimensions based on hand-tuned fit for bitrate vs K, N and
+       "center of mass". */
+    return (1 + .4*f)*n*OD_LOG2(1 + OD_MAXF(0, log(n*2*(1*f + .025))*k/n)) + 3;
+}
+
 /** Find the codepoint on the given PSphere closest to the desired
  * vector. Double-precision PVQ search just to make sure our tests
  * aren't limited by numerical accuracy.
@@ -103,6 +112,7 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
   double norm_1;
   int rdo_pulses;
   double delta_rate;
+  double delta_rate_curve;
   int sum;
   xx = xy = yy = 0;
   for (j = 0; j < n; j++) {
@@ -180,26 +190,25 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
     int rsqrt_table_size = 4;
     int pos;
     double best_cost;
-    double rate;
-    double f;
-    int N;
-    int K;
-    K = i + 1;
-    N = n + (theta != -1);
     pos = 0;
     best_cost = -1e5;
     /*Fill the small rsqrt lookup table with inputs relative to yy.
       Specifically, the table of n values is filled with
        rsqrt(yy + 1), rsqrt(yy + 2 + 1) .. rsqrt(yy + 2*(n-1) + 1).*/
     od_fill_dynamic_rqrt_table(rsqrt_table, rsqrt_table_size, yy);
-    /* Estimates the number of bits it will cost to encode K pulses in
-       N dimensions based on hand-tuned fit for bitrate vs K, N and
-       "center of mass". */
-    f = sum/(double)(K*N);
-    rate = (1 + .4*f)*N*OD_LOG2(1 + OD_MAXF(0, log(N*2*(1*f + .025))*K/N)) + 3;
-    f = (sum + n - 1)/(double)(K*N);
-    delta_rate = (1 + .4*f)*N*OD_LOG2(1 + OD_MAXF(0, log(N*2*(1*f + .025))*K/N)) + 3 - rate;
-    delta_rate /= n - 1;
+    {
+      double rate;
+      int N;
+      int K;
+      double mid;
+      K = i + 1;
+      N = n + (theta != -1);
+      mid = .5*(n - 1);
+      rate = od_pvq_codeword_rate(K, N, sum);
+      delta_rate = (od_pvq_codeword_rate(K, N, sum + n - 1) - rate)/(n - 1);
+      delta_rate_curve = (od_pvq_codeword_rate(K, N, sum + mid) - rate - mid*delta_rate)/(mid*mid);
+      delta_rate += delta_rate_curve*(n - 1);
+    }
     for (j = 0; j < n; j++) {
       double tmp_xy;
       double tmp_yy;
@@ -207,7 +216,7 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
       /*Calculate rsqrt(yy + 2*ypulse[j] + 1) using an optimized method.*/
       tmp_yy = od_custom_rsqrt_dynamic_table(rsqrt_table, rsqrt_table_size,
        yy, ypulse[j]);
-      tmp_xy = 2*tmp_xy*norm_1*tmp_yy - lambda*j*delta_rate;
+      tmp_xy = 2*tmp_xy*norm_1*tmp_yy - lambda*j*(delta_rate - j*delta_rate_curve);
       if (j == 0 || tmp_xy > best_cost) {
         best_cost = tmp_xy;
         pos = j;
@@ -253,15 +262,10 @@ static double od_pvq_rate(int qg, int icgr, int theta, int ts,
   else if (speed > 0) {
     int i;
     int sum;
-    double f;
     /* Compute "center of mass" of the pulse vector. */
     sum = 0;
     for (i = 0; i < n - (theta != -1); i++) sum += i*abs(y0[i]);
-    f = sum/(double)(k*n);
-    /* Estimates the number of bits it will cost to encode K pulses in
-       N dimensions based on hand-tuned fit for bitrate vs K, N and
-       "center of mass". */
-    rate = (1 + .4*f)*n*OD_LOG2(1 + OD_MAXF(0, log(n*2*(1*f + .025))*k/n)) + 3;
+    rate = od_pvq_codeword_rate(k, n, sum);
   }
   else {
     od_ec_enc ec;
