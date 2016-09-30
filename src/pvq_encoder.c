@@ -81,7 +81,7 @@ static double od_pvq_codeword_rate(int k, int n, double sum) {
     /* Estimates the number of bits it will cost to encode K pulses in
        N dimensions based on hand-tuned fit for bitrate vs K, N and
        "center of mass". */
-    return (1 + .4*f)*n*OD_LOG2(1 + OD_MAXF(0, log(n*2*(1*f + .025))*k/n)) + 3;
+    return 0.881*(1 + 0.66*f)*n*OD_LOG2(1 + OD_MAXF(0, log(n*2*(0.52*f + 0.017))*k/n)) + 10.4;
 }
 
 /** Find the codepoint on the given PSphere closest to the desired
