@@ -307,7 +307,7 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
  int n, int q0, od_coeff *y, int *itheta, int *max_theta, int *vk,
  od_val16 beta, double *skip_diff, int robust, int is_keyframe, int pli,
  const od_adapt_ctx *adapt, const int16_t *qm,
- const int16_t *qm_inv, double pvq_norm_lambda, int speed) {
+ const int16_t *qm_inv, double pvq_norm_lambda, int speed, int band) {
   od_val32 g;
   od_val32 gr;
   od_coeff y_tmp[MAXN];
@@ -554,6 +554,15 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
       od_val32 qcg;
       qcg = OD_SHL(i, OD_CGAIN_SHIFT);
       k = od_pvq_compute_k(qcg, -1, -1, 1, n, beta, robust || is_keyframe);
+      if (i == gain_bound + 1) {
+        int j;
+        double l1;
+        double mass;
+        l1 = mass = 0;
+        for (j = 0; j < n; j++) mass += abs(x16[j])*j, l1 += abs(x16[j]);
+        if (l1 > 0)
+          fprintf(stderr, "%d %d %d %.6f\n", band, n, g, mass/(l1*n));
+      }
       /* Compute the minimal possible distortion by not taking the PVQ
          cos_dist into account. */
       dist = gain_weight*(qcg - cg)*(qcg - cg);
@@ -847,7 +856,7 @@ int od_pvq_encode(daala_enc_ctx *enc,
      q, y + off[i], &theta[i], &max_theta[i],
      &k[i], beta[i], &skip_diff, robust, is_keyframe, pli,
      &enc->state.adapt, qm + off[i], qm_inv + off[i], enc->pvq_norm_lambda,
-     speed);
+     speed, od_qm_get_index(bs, i + 1));
   }
   od_encode_checkpoint(enc, &buf);
   if (is_keyframe) out[0] = 0;

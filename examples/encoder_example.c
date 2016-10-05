@@ -219,6 +219,7 @@ static void id_y4m_file(av_input *avin, const char *file, FILE *test) {
   }
   avin->video_infile = test;
   avin->has_video = 1;
+  if (0)
   fprintf(stderr, "File '%s' is %ix%i %0.03f fps %s video.\n",
    file, avin->video_pic_w, avin->video_pic_h,
    (double)avin->video_fps_n/avin->video_fps_d, avin->video_chroma_type);
@@ -1077,6 +1078,7 @@ int main(int argc, char **argv) {
   }
   /*Setup complete.
      Main compression loop.*/
+  if(0)
   fprintf(stderr, "Compressing...\n");
   t0 = clock();
   for (;;) {
@@ -1109,13 +1111,16 @@ int main(int argc, char **argv) {
     time_base = video_time;
     current_frame_no = time_base*video_fps;
     if (interactive) {
+      if(0)
       fprintf(stderr, "\r");
     }
     else {
+      if(0)
       fprintf(stderr, "\n");
     }
     t1 = clock();
     time_spent = (double)(t1 - t0)/CLOCKS_PER_SEC;
+    if (0)
     fprintf(stderr,
      "     %i:%02i:%02i.%02i video: %0.0fkbps - Frame %i - %0.2f FPS - %0.2f FPM     ",
      (int)time_base/3600, ((int)time_base/60)%60, (int)time_base % 60,
@@ -1127,6 +1132,7 @@ int main(int argc, char **argv) {
   daala_encode_free(dd);
   daala_comment_clear(&dc);
   io_cleanup(&avin, outfile);
+  if (0)
   fprintf(stderr, "\r    \ndone.\n\r");
   return 0;
 }
