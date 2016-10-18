@@ -58,7 +58,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 #define OD_MASKING_DISABLED 0
 #define OD_MASKING_ENABLED 1
 
-static const unsigned char OD_LUMA_QM_Q6[2][OD_QM_SIZE] = {
+static const unsigned char OD_LUMA_QM_Q6[4][OD_QM_SIZE] = {
 /* Flat quantization for PSNR. The DC component isn't 64 because the DC
    magnitude compensation is done here for inter (Haar DC doesn't need it).
    Masking disabled: */
@@ -76,10 +76,24 @@ static const unsigned char OD_LUMA_QM_Q6[2][OD_QM_SIZE] = {
    Masking enabled: */
  {
   84, 64,
-  73, 72, 112, 128,
-  68, 56,  80,  80, 112, 128,
-  66, 44,  56,  56,  68,  68, 88, 112,
-  65, 32,  48,  44,  48,  48, 60,  60, 76, 92
+  73, 78, 124, 130,
+  68, 59,  91,  90, 110, 111,
+  66, 44,  67,  62,  73,  70, 86, 112,
+  65, 32,  50,  47,  52,  48, 56,  60, 76, 92
+ },
+ {
+  84, 64,
+  73, 64,  88,  98,
+  68, 51,  71,  74,  86,  93,
+  66, 39,  56,  54,  62,  61, 74, 112,
+  65, 30,  44,  42,  46,  44, 50,  60, 76, 92
+ },
+ {
+  84, 64,
+  73, 50,  52,  62,
+  68, 42,  49,  56,  58,  70,
+  66, 34,  44,  45,  49,  52, 60, 112,
+  65, 27,  37,  36,  39,  39, 44,  60, 76, 92
  }
 };
 
@@ -132,10 +146,10 @@ static const od_qm_entry OD_DEFAULT_QMS[2][4][OD_NPLANES_MAX] = {
  {{{4, 256, OD_LUMA_QM_Q6[OD_MASKING_ENABLED]},
    {4, 448, OD_CHROMA_QM_Q6[OD_MASKING_ENABLED]},
    {4, 320, OD_CHROMA_QM_Q6[OD_MASKING_ENABLED]}},
-  {{32, 256, OD_LUMA_QM_Q6[OD_MASKING_ENABLED]},
+  {{32, 256, OD_LUMA_QM_Q6[OD_MASKING_ENABLED + 1]},
    {32, 256, OD_CHROMA_QM_Q6[OD_MASKING_ENABLED]},
    {32, 179, OD_CHROMA_QM_Q6[OD_MASKING_ENABLED]}},
-  {{256, 256, OD_LUMA_QM_Q6[OD_MASKING_ENABLED]},
+  {{256, 256, OD_LUMA_QM_Q6[OD_MASKING_ENABLED + 2]},
    {256, 146, OD_CHROMA_QM_Q6[OD_MASKING_ENABLED]},
    {256, 100, OD_CHROMA_QM_Q6[OD_MASKING_ENABLED]}},
   {{0, 0, NULL},
