@@ -114,14 +114,17 @@ typedef struct od_qm_entry {
 /* No interpolation, always use od_flat_qm_q4, but use a different scale for
    each plane.
    FIXME: Add interpolation and properly tune chroma. */
-static const od_qm_entry OD_DEFAULT_QMS[2][3][OD_NPLANES_MAX] = {
+static const od_qm_entry OD_DEFAULT_QMS[2][4][OD_NPLANES_MAX] = {
  /* Masking disabled */
  {{{4, 256, OD_LUMA_QM_Q4[OD_MASKING_DISABLED]},
    {4, 448, OD_CHROMA_QM_Q4[OD_MASKING_DISABLED]},
    {4, 320, OD_CHROMA_QM_Q4[OD_MASKING_DISABLED]}},
-  {{318, 256, OD_LUMA_QM_Q4[OD_MASKING_DISABLED]},
-   {318, 140, OD_CHROMA_QM_Q4[OD_MASKING_DISABLED]},
-   {318, 100, OD_CHROMA_QM_Q4[OD_MASKING_DISABLED]}},
+  {{32, 256, OD_LUMA_QM_Q4[OD_MASKING_DISABLED]},
+   {32, 256, OD_CHROMA_QM_Q4[OD_MASKING_DISABLED]},
+   {32, 179, OD_CHROMA_QM_Q4[OD_MASKING_DISABLED]}},
+  {{256, 256, OD_LUMA_QM_Q4[OD_MASKING_DISABLED]},
+   {256, 146, OD_CHROMA_QM_Q4[OD_MASKING_DISABLED]},
+   {256, 100, OD_CHROMA_QM_Q4[OD_MASKING_DISABLED]}},
   {{0, 0, NULL},
    {0, 0, NULL},
    {0, 0, NULL}}},
@@ -129,9 +132,12 @@ static const od_qm_entry OD_DEFAULT_QMS[2][3][OD_NPLANES_MAX] = {
  {{{4, 256, OD_LUMA_QM_Q4[OD_MASKING_ENABLED]},
    {4, 448, OD_CHROMA_QM_Q4[OD_MASKING_ENABLED]},
    {4, 320, OD_CHROMA_QM_Q4[OD_MASKING_ENABLED]}},
-  {{318, 256, OD_LUMA_QM_Q4[OD_MASKING_ENABLED]},
-   {318, 140, OD_CHROMA_QM_Q4[OD_MASKING_ENABLED]},
-   {318, 100, OD_CHROMA_QM_Q4[OD_MASKING_ENABLED]}},
+  {{32, 256, OD_LUMA_QM_Q4[OD_MASKING_ENABLED]},
+   {32, 256, OD_CHROMA_QM_Q4[OD_MASKING_ENABLED]},
+   {32, 179, OD_CHROMA_QM_Q4[OD_MASKING_ENABLED]}},
+  {{256, 256, OD_LUMA_QM_Q4[OD_MASKING_ENABLED]},
+   {256, 146, OD_CHROMA_QM_Q4[OD_MASKING_ENABLED]},
+   {256, 100, OD_CHROMA_QM_Q4[OD_MASKING_ENABLED]}},
   {{0, 0, NULL},
    {0, 0, NULL},
    {0, 0, NULL}}}
@@ -2873,41 +2879,37 @@ static void od_dump_frame_metrics(daala_enc_ctx *enc) {
 #endif
 
 static void od_interp_qm(unsigned char *out, int q, const od_qm_entry *entry1,
-  const od_qm_entry *entry2) {
+  const od_qm_entry *entry2, const od_qm_entry *entry3) {
   int i;
-  if (entry2 == NULL || entry2->qm_q4 == NULL
-   || q < entry1->interp_q << OD_COEFF_SHIFT) {
-    /* Use entry1. */
-    for (i = 0; i < OD_QM_SIZE; i++) {
-      out[i] = OD_MINI(255, entry1->qm_q4[i]*entry1->scale_q8 >> 8);
-    }
-  }
-  else if (entry1 == NULL || entry1->qm_q4 == NULL
-   || q > entry2->interp_q << OD_COEFF_SHIFT) {
-    /* Use entry2. */
-    for (i = 0; i < OD_QM_SIZE; i++) {
-      out[i] = OD_MINI(255, entry2->qm_q4[i]*entry2->scale_q8 >> 8);
-    }
-  }
-  else {
-    /* Interpolate between entry1 and entry2. The interpolation is linear
-       in terms of log(q) vs log(m*scale). Considering that we're ultimately
-       multiplying the result it makes sense, but we haven't tried other
-       interpolation methods. */
-    double x;
-    const unsigned char *m1;
-    const unsigned char *m2;
-    int q1;
-    int q2;
-    m1 = entry1->qm_q4;
-    m2 = entry2->qm_q4;
-    q1 = entry1->interp_q << OD_COEFF_SHIFT;
-    q2 = entry2->interp_q << OD_COEFF_SHIFT;
-    x = (log(q)-log(q1))/(log(q2)-log(q1));
-    for (i = 0; i < OD_QM_SIZE; i++) {
-      out[i] = OD_MINI(255, (int)floor(.5 + (1./256)*exp(
-       x*log(m2[i]*entry2->scale_q8) + (1 - x)*log(m1[i]*entry1->scale_q8))));
-    }
+  /* Interpolate between entry1, entry2 and entry3. The interpolation is
+     quadratic in terms of log(q) vs log(m*scale). */
+  double x;
+  double x2;
+  double l0;
+  double l1;
+  double l2;
+  const unsigned char *m1;
+  const unsigned char *m2;
+  const unsigned char *m3;
+  int q1;
+  int q2;
+  int q3;
+  m1 = entry1->qm_q4;
+  m2 = entry2->qm_q4;
+  m3 = entry3->qm_q4;
+  q1 = entry1->interp_q << OD_COEFF_SHIFT;
+  q2 = entry2->interp_q << OD_COEFF_SHIFT;
+  q3 = entry3->interp_q << OD_COEFF_SHIFT;
+  x = (log(q)-log(q1))/(log(q3)-log(q1));
+  x2 = (log(q2)-log(q1))/(log(q3)-log(q1));
+  l0 = (x - 1)*(x - x2)/((0 - 1)*(0 - x2));
+  l1 = (x - 0)*(x - 1)/((x2 - 0)*(x2 - 1));
+  l2 = (x - 0)*(x - x2)/((1 - 0)*(1 - x2));
+  for (i = 0; i < OD_QM_SIZE; i++) {
+    out[i] = OD_MINI(255, (int)floor(.5 + (1./256)*exp(
+     l0*log(m1[i]*entry1->scale_q8)
+     + l1*log(m2[i]*entry2->scale_q8)
+     + l2*log(m3[i]*entry3->scale_q8))));
   }
 }
 
@@ -3026,21 +3028,11 @@ static int od_encode_frame(daala_enc_ctx *enc, daala_image *img, int frame_type,
       int i;
       int q;
       q = enc->rc.base_quantizer;
-      if (q <= OD_DEFAULT_QMS[use_masking][0][pli].interp_q << OD_COEFF_SHIFT) {
-        od_interp_qm(&enc->state.pvq_qm_q4[pli][0], q,
-         &OD_DEFAULT_QMS[use_masking][0][pli], NULL);
-      }
-      else {
-        i = 0;
-        while (OD_DEFAULT_QMS[use_masking][i + 1][pli].qm_q4 != NULL &&
-         q > OD_DEFAULT_QMS[use_masking][i + 1][pli].interp_q
-         << OD_COEFF_SHIFT) {
-          i++;
-        }
-        od_interp_qm(&enc->state.pvq_qm_q4[pli][0], q,
-         &OD_DEFAULT_QMS[use_masking][i][pli],
-         &OD_DEFAULT_QMS[use_masking][i + 1][pli]);
-      }
+      i = 0;
+      od_interp_qm(&enc->state.pvq_qm_q4[pli][0], q,
+       &OD_DEFAULT_QMS[use_masking][i][pli],
+       &OD_DEFAULT_QMS[use_masking][i + 1][pli],
+       &OD_DEFAULT_QMS[use_masking][i + 2][pli]);
     }
     for (pli = 0; pli < nplanes; pli++) {
       int i;
