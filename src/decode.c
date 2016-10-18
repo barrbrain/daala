@@ -538,7 +538,7 @@ static void od_block_decode(daala_dec_ctx *dec, od_mb_dec_ctx *ctx, int bs,
   if (lossless) dc_quant = 1;
   else {
     dc_quant = OD_MAXI(1, quant*
-     dec->state.pvq_qm_q4[pli][od_qm_get_index(bs, 0)] >> 4);
+     dec->state.pvq_qm_q6[pli][od_qm_get_index(bs, 0)] >> 6);
   }
   if (ctx->use_haar_wavelet) {
     od_wavelet_unquantize(dec, bs + 2, pred, predt,
@@ -613,7 +613,7 @@ static void od_decode_haar_dc_sb(daala_dec_ctx *dec, od_mb_dec_ctx *ctx,
   if (OD_LOSSLESS(dec)) dc_quant = 1;
   else {
     dc_quant = OD_MAXI(1, dec->state.quantizer*
-     dec->state.pvq_qm_q4[pli][od_qm_get_index(OD_NBSIZES - 1, 0)] >> 4);
+     dec->state.pvq_qm_q6[pli][od_qm_get_index(OD_NBSIZES - 1, 0)] >> 6);
   }
   nhsb = dec->state.nhsb;
   sb_dc_mem = dec->state.sb_dc_mem[pli];
@@ -660,12 +660,12 @@ static void od_decode_haar_dc_level(daala_dec_ctx *dec, od_mb_dec_ctx *ctx, int 
   if (OD_LOSSLESS(dec)) dc_quant = 1;
   else {
     dc_quant = OD_MAXI(1, dec->state.quantizer*
-     dec->state.pvq_qm_q4[pli][od_qm_get_index(OD_NBSIZES - 1, 0)] >> 4);
+     dec->state.pvq_qm_q6[pli][od_qm_get_index(OD_NBSIZES - 1, 0)] >> 6);
   }
   if (OD_LOSSLESS(dec)) ac_quant[0] = ac_quant[1] = 1;
   else {
-    ac_quant[0] = (dc_quant*OD_DC_QM[bsi - xdec][0] + 8) >> 4;
-    ac_quant[1] = (dc_quant*OD_DC_QM[bsi - xdec][1] + 8) >> 4;
+    ac_quant[0] = (dc_quant*OD_DC_QM[bsi - xdec][0] + 32) >> 6;
+    ac_quant[1] = (dc_quant*OD_DC_QM[bsi - xdec][1] + 32) >> 6;
   }
   ln = bsi - xdec + 2;
   x[0] = ctx->d[pli][(by << ln)*w + (bx << ln)];
@@ -1161,7 +1161,7 @@ int daala_decode_packet_in(daala_dec_ctx *dec, const daala_packet *op) {
     for (pli = 0; pli < nplanes; pli++) {
       int i;
       for (i = 0; i < OD_QM_SIZE; i++) {
-        dec->state.pvq_qm_q4[pli][i] = od_ec_dec_bits(&dec->ec, 8, "qm");
+        dec->state.pvq_qm_q6[pli][i] = od_ec_dec_bits(&dec->ec, 8, "qm");
       }
     }
   }
