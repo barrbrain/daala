@@ -58,7 +58,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 #define OD_MASKING_DISABLED 0
 #define OD_MASKING_ENABLED 1
 
-static const unsigned char OD_LUMA_QM_Q6[4][OD_QM_SIZE] = {
+static unsigned char OD_LUMA_QM_Q6[4][OD_QM_SIZE] = {
 /* Flat quantization for PSNR. The DC component isn't 64 because the DC
    magnitude compensation is done here for inter (Haar DC doesn't need it).
    Masking disabled: */
@@ -96,6 +96,19 @@ static const unsigned char OD_LUMA_QM_Q6[4][OD_QM_SIZE] = {
   65, 27,  37,  36,  39,  39, 44,  60, 76, 92
  }
 };
+
+static void read_luma_qm(void) {
+  int i;
+  char* var = getenv("OD_LUMA_QM_Q6");
+  const int idx[] = { 3, 4, 5 };
+  const int N = sizeof(idx)/sizeof(*idx);
+  if (!var) return;
+  for (i = 0, var = strtok(strdup(var), " "); var; var = strtok(NULL, " "), i++) {
+    int q;
+    if (1 != sscanf(var, "%d", &q)) break;
+    OD_LUMA_QM_Q6[i/N+1][idx[i%N]] = q;
+  }
+}
 
 static const unsigned char OD_CHROMA_QM_Q6[2][OD_QM_SIZE] = {
 /* Chroma quantization is different because of the reduced lapping.
@@ -3038,6 +3051,8 @@ static int od_encode_frame(daala_enc_ctx *enc, daala_image *img, int frame_type,
   od_ec_encode_bool_q15(&enc->ec, mbctx.use_haar_wavelet, 16384);
   od_ec_encode_bool_q15(&enc->ec, mbctx.is_golden_frame, 16384);
   if (mbctx.is_keyframe) {
+    char* dump_luma_qm = getenv("DUMP_OD_LUMA_QM_Q6");
+    read_luma_qm();
     for (pli = 0; pli < nplanes; pli++) {
       int i;
       int q;
@@ -3047,6 +3062,15 @@ static int od_encode_frame(daala_enc_ctx *enc, daala_image *img, int frame_type,
        &OD_DEFAULT_QMS[use_masking][i][pli],
        &OD_DEFAULT_QMS[use_masking][i + 1][pli],
        &OD_DEFAULT_QMS[use_masking][i + 2][pli]);
+    }
+    if (dump_luma_qm) {
+      int i;
+      fprintf(stderr, "OD_LUMA_QM_Q6");
+      for (i = 0; i < OD_QM_SIZE; i++) {
+        fprintf(stderr, " %d", enc->state.pvq_qm_q6[0][i]);
+      }
+      fprintf(stderr, "\n");
+      exit(0);
     }
     for (pli = 0; pli < nplanes; pli++) {
       int i;
