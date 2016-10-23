@@ -76,21 +76,21 @@ static unsigned char OD_LUMA_QM_Q6[4][OD_QM_SIZE] = {
    Masking enabled: */
  {
   84, 64,
-  73, 78, 131, 132,
+  73, 60, 142, 162,
   68, 59,  91,  90, 110, 111,
   66, 44,  67,  62,  73,  70, 86, 112,
   65, 32,  50,  47,  52,  48, 56,  60, 76, 92
  },
  {
   84, 64,
-  73, 66,  91, 100,
+  73, 60, 119, 126,
   68, 51,  71,  74,  86,  93,
   66, 39,  56,  54,  62,  61, 74, 112,
   65, 30,  44,  42,  46,  44, 50,  60, 76, 92
  },
  {
   84, 64,
-  73, 50,  52,  62,
+  73, 60,  49,  66,
   68, 42,  49,  56,  58,  70,
   66, 34,  44,  45,  49,  52, 60, 112,
   65, 27,  37,  36,  39,  39, 44,  60, 76, 92
@@ -100,7 +100,7 @@ static unsigned char OD_LUMA_QM_Q6[4][OD_QM_SIZE] = {
 static void read_luma_qm(void) {
   int i;
   char* var = getenv("OD_LUMA_QM_Q6");
-  const int idx[] = { 3, 4, 5 };
+  const int idx[] = { 7, 8, 9, 10, 11 };
   const int N = sizeof(idx)/sizeof(*idx);
   if (!var) return;
   for (i = 0, var = strtok(strdup(var), " "); var; var = strtok(NULL, " "), i++) {
