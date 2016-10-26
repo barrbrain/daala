@@ -27,10 +27,16 @@ do
   HIT=0
   for step in 1 -1
   do
-    for (( i=0; i < 9; ++i ))
+    #for (( i=0; i < 15; ++i ))
+    for i in 0 1 2 3 4 6 7 8 9 11 12 13 14
     do
       OD_LUMA_QM_Q6=( ${LAST_OD_LUMA_QM_Q6[@]} )
       OD_LUMA_QM_Q6[i]=$(( OD_LUMA_QM_Q6[i] + $step ))
+      if [ $i = 0 ]
+      then
+        OD_LUMA_QM_Q6[5]=$(( OD_LUMA_QM_Q6[5] + $step ))
+        OD_LUMA_QM_Q6[10]=$(( OD_LUMA_QM_Q6[10] + $step ))
+      fi
       last_run=`run_file ${LAST_OD_LUMA_QM_Q6[@]}`
       this_run=`run_file ${OD_LUMA_QM_Q6[@]}`
       if ! [ -e $this_run ]
@@ -45,6 +51,11 @@ do
             grep -qF 'NRHVS 0 0' bd_rate && grep -qF ' PSNR 0 0' bd_rate
       do
         OD_LUMA_QM_Q6[i]=$(( OD_LUMA_QM_Q6[i] + $step ))
+        if [ $i = 0 ]
+        then
+          OD_LUMA_QM_Q6[5]=$(( OD_LUMA_QM_Q6[5] + $step ))
+          OD_LUMA_QM_Q6[10]=$(( OD_LUMA_QM_Q6[10] + $step ))
+        fi
         this_run=`run_file ${OD_LUMA_QM_Q6[@]}`
         if ! [ -e $this_run ]
         then

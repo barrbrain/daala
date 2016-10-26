@@ -31,11 +31,11 @@ CMDS="$CMDS set ylabel 'dB';"
 CMDS="$CMDS set key bot right;"
 
 for FILE in "$@"; do
-  BASENAME=$(basename $FILE)
-  PSNR="$PSNR $PREFIX '$FILE' using (\$3*8/\$2):4 with lines title '${BASENAME%.*} (PSNR)'"
-  PSNRHVS="$PSNRHVS $PREFIX '$FILE' using (\$3*8/\$2):5 with lines title '${BASENAME%.*} (PSNR-HVS)'"
-  SSIM="$SSIM $PREFIX '$FILE' using (\$3*8/\$2):6 with lines title '${BASENAME%.*} (SSIM)'"
-  FASTSSIM="$FASTSSIM $PREFIX '$FILE' using (\$3*8/\$2):7 with lines title '${BASENAME%.*} (FAST SSIM)'"
+  BASENAME=$(basename $FILE| tr '_' ' ')
+  PSNR="$PSNR $PREFIX '$FILE' using (\$3*8/\$2):4 with linespoints title '${BASENAME%.*} (PSNR)'"
+  PSNRHVS="$PSNRHVS $PREFIX '$FILE' using (\$3*8/\$2):5 with linespoints title '${BASENAME%.*} (PSNR-HVS)'"
+  SSIM="$SSIM $PREFIX '$FILE' using (\$3*8/\$2):6 with linespoints title '${BASENAME%.*} (SSIM)'"
+  FASTSSIM="$FASTSSIM $PREFIX '$FILE' using (\$3*8/\$2):7 with linespoints title '${BASENAME%.*} (FAST SSIM)'"
   PREFIX=","
 done
 
