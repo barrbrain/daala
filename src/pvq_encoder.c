@@ -424,7 +424,7 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
     noref = 0;
   }
   dist0 = best_dist;
-  if (n <= OD_MAX_PVQ_SIZE && !od_vector_is_null(r0, n) && corr > 0) {
+  if (0 && n <= OD_MAX_PVQ_SIZE && !od_vector_is_null(r0, n) && corr > 0) {
     od_val16 xr[MAXN];
     int gain_bound;
     int prev_k;
