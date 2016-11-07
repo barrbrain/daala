@@ -27,7 +27,10 @@ do
   HIT=0
   for step in 1 -1
   do
-    for (( i=0; i < 8; ++i ))
+    ITER="3 4 5"
+    [ $step = -1 ] && ITER="6 7"
+    # for (( i=3; i < 8; ++i ))
+    for i in $ITER
     do
       OD_LUMA_QM_Q6=( ${LAST_OD_LUMA_QM_Q6[@]} )
       OD_LUMA_QM_Q6[i]=$(( OD_LUMA_QM_Q6[i] + $step ))
