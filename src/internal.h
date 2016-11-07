@@ -69,7 +69,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 
 /*The deringing filter is applied on 8x8 blocks, but it's application
    is signaled on a 64x64 grid.*/
-# define OD_LOG_DERING_GRID (OD_BLOCK_16X16)
+# define OD_LOG_DERING_GRID (OD_BLOCK_64X64)
 
 /*The superblock resolution of the block size array.  Because four 4x4 blocks
    and one 8x8 can be resolved with a single entry, this is the maximum number
@@ -98,7 +98,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 # define OD_MC_NLEVELS (OD_MC_LEVEL_MAX + 1)
 
 # define OD_LIMIT_BSIZE_MIN (OD_BLOCK_4X4)
-# define OD_LIMIT_BSIZE_MAX (OD_BLOCK_64X64)
+# define OD_LIMIT_BSIZE_MAX (OD_BLOCK_16X16)
 # if OD_LIMIT_BSIZE_MIN > OD_BLOCK_64X64 || OD_LIMIT_BSIZE_MAX > OD_BLOCK_64X64
 #  error "block sizes above 64x64 not supported"
 # endif
