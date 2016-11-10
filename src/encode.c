@@ -86,7 +86,7 @@ static unsigned char OD_LUMA_QM_Q6[2][OD_QM_SIZE] = {
 static void read_luma_qm(void) {
   int i;
   char* var = getenv("OD_LUMA_QM_Q6");
-  const int idx[] = { 3, 4, 5, 7, 8, 9, 10, 11 };
+  const int idx[] = { 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26 };
   const int N = sizeof(idx)/sizeof(*idx);
   if (!var) return;
   for (i = 0, var = strtok(strdup(var), " "); i < N && var; var = strtok(NULL, " "), i++) {
