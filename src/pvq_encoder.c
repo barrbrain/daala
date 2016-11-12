@@ -194,7 +194,7 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
       /*The (x[j] == 0) term accounts for the cost of coding a new sign for a
          pulse position that was previously zero.*/
       tmp_xy = 2*tmp_xy*norm_1*tmp_yy
-       - lambda*(j*delta_rate + (ypulse[j] == 0));
+       - lambda*(j*delta_rate + 0.5*(ypulse[j] == 0));
       if (j == 0 || tmp_xy > best_cost) {
         best_cost = tmp_xy;
         pos = j;
