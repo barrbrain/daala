@@ -211,7 +211,7 @@ static void pvq_decode_partition(od_ec_dec *ec,
 #else
   /* Shift needed to make the reference fit in 15 bits, so that the Householder
      vector can fit in 16 bits. */
-  rshift = OD_MAXI(0, od_vector_log_mag(ref, n) - 14);
+  rshift = OD_MAXI(0, od_vector_log_mag(ref, n) - 13);
 #endif
   for (i = 0; i < n; i++) {
 #if defined(OD_FLOAT_PVQ)

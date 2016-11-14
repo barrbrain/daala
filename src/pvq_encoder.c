@@ -364,7 +364,7 @@ static int pvq_theta(od_coeff *out, const od_coeff *x0, const od_coeff *r0,
   /* Shift needed to make the reference fit in 15 bits, so that the Householder
      vector can fit in 16 bits.
      This shift value *is* normative, and has to match the decoder. */
-  rshift = OD_MAXI(0, od_vector_log_mag(r0, n) - 14);
+  rshift = OD_MAXI(0, od_vector_log_mag(r0, n) - 13);
 #else
   xshift = 0;
   rshift = 0;
