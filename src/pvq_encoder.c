@@ -199,6 +199,21 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
     sum += pos;
     ypulse[pos]++;
   }
+  if (k > 1) {
+    double rate;
+    double mid;
+    int N;
+    int K;
+    K = i + 1;
+    N = n + (theta != -1);
+    mid = .5*(n - 1);
+    rate = od_pvq_codeword_rate(K, N, sum);
+    delta_rate = (od_pvq_codeword_rate(K, N, sum + n - 1) - rate)/(n - 1);
+    delta_rate = OD_MAXF(0., delta_rate);
+    accel_rate = (rate + mid*delta_rate - od_pvq_codeword_rate(K, N, sum + mid))/(mid*mid);
+    accel_rate = OD_MINF(0., accel_rate);
+    delta_rate -= accel_rate*(n - 1);
+  }
   /* Search last pulses with RDO. Distortion is D = (x-y)^2 = x^2 - 2*x*y + y^2
      and since x^2 and y^2 are constant, we just maximize x*y, plus a
      lambda*rate term. Note that since x and y aren't normalized here,
@@ -214,21 +229,6 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
       Specifically, the table of n values is filled with
        rsqrt(yy + 1), rsqrt(yy + 2 + 1) .. rsqrt(yy + 2*(n-1) + 1).*/
     od_fill_dynamic_rsqrt_table(rsqrt_table, rsqrt_table_size, yy);
-    if (k > 1) {
-      double rate;
-      double mid;
-      int N;
-      int K;
-      K = i + 1;
-      N = n + (theta != -1);
-      mid = .5*(n - 1);
-      rate = od_pvq_codeword_rate(K, N, sum);
-      delta_rate = (od_pvq_codeword_rate(K, N, sum + n - 1) - rate)/(n - 1);
-      delta_rate = OD_MAXF(0., delta_rate);
-      accel_rate = (rate + mid*delta_rate - od_pvq_codeword_rate(K, N, sum + mid))/(mid*mid);
-      accel_rate = OD_MINF(0., accel_rate);
-      delta_rate -= accel_rate*(n - 1);
-    }
     for (j = 0; j < n; j++) {
       double tmp_xy;
       double tmp_yy;
