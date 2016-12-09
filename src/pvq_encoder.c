@@ -113,6 +113,8 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
   int rdo_pulses;
   double delta_rate;
   double accel_rate;
+  double delta_rate_step;
+  double accel_rate_step;
   int sum;
   xx = xy = yy = 0;
   for (j = 0; j < n; j++) {
@@ -160,6 +162,8 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
      the first. */
   delta_rate = 3./n;
   accel_rate = 0.;
+  delta_rate_step = 0.;
+  accel_rate_step = 0.;
   /* Quadratic fit of rate for a lone pulse.
      Trained on subset3, like the following pseudocode:
      rate = od_pvq_rate.where(k=1).group_by(n, pos).mean()
@@ -200,6 +204,8 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
     ypulse[pos]++;
   }
   if (k > 1) {
+    double delta_rate2;
+    double accel_rate2;
     double rate;
     double mid;
     int N;
@@ -213,6 +219,16 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
     accel_rate = (rate + mid*delta_rate - od_pvq_codeword_rate(K, N, sum + mid))/(mid*mid);
     accel_rate = OD_MINF(0., accel_rate);
     delta_rate -= accel_rate*(n - 1);
+    sum = sum*k/K;
+    K = k;
+    rate = od_pvq_codeword_rate(K, N, sum);
+    delta_rate2 = (od_pvq_codeword_rate(K, N, sum + n - 1) - rate)/(n - 1);
+    delta_rate2 = OD_MAXF(0., delta_rate2);
+    accel_rate2 = (rate + mid*delta_rate2 - od_pvq_codeword_rate(K, N, sum + mid))/(mid*mid);
+    accel_rate2 = OD_MINF(0., accel_rate2);
+    delta_rate2 -= accel_rate2*(n - 1);
+    delta_rate_step = (delta_rate2 - delta_rate)/(k - i);
+    accel_rate_step = (accel_rate2 - accel_rate)/(k - i);
   }
   /* Search last pulses with RDO. Distortion is D = (x-y)^2 = x^2 - 2*x*y + y^2
      and since x^2 and y^2 are constant, we just maximize x*y, plus a
@@ -246,6 +262,8 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
     yy = yy + 2*ypulse[pos] + 1;
     sum += pos;
     ypulse[pos]++;
+    delta_rate += delta_rate_step;
+    accel_rate += accel_rate_step;
   }
   for (i = 0; i < n; i++) {
     if (xcoeff[i] < 0) ypulse[i] = -ypulse[i];
