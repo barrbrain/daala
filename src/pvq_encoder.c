@@ -203,7 +203,7 @@ static double pvq_search_rdo_double(const od_val16 *xcoeff, int n, int k,
     sum += pos;
     ypulse[pos]++;
   }
-  if (k > 1) {
+  if (k > 1 && theta == -1) {
     double delta_rate2;
     double accel_rate2;
     double rate;
