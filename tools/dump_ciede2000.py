@@ -13,11 +13,24 @@ yuv2rgb = np.array([
 
 # Simple box filter
 box2 = np.ones((2, 2))
+H2 = np.array([[1, 1], [-1, -1]]) * (6 * 13 / 512)
+V2 = np.array([[1, -1], [1, -1]]) * (6 * 13 / 512)
+D2 = np.array([[1, -1], [-1, 1]]) * (13 / 512)
 
 
 def usage():
     print("Usage: %s <video1> <video2>\n"
             "    <video1> and <video2> must be YUV4MPEG files.\n\n" %  __file__);
+
+
+def chroma_upscale(c):
+    c_box = np.kron(c, box2)
+    c_V = c[1:-1, :-2] - c[1:-1, 2:]
+    c_H = c[:-2, 1:-1] - c[2:, 1:-1]
+    c_D = c[:-2, :-2] + c[2:, 2:] - c[:-2, 2:] - c[2:, :-2]
+    c_box[2:-2, 2:-2] += np.kron(c_H, H2) + np.kron(c_V, V2) + np.kron(c_D, D2)
+    return c_box.clip(-.5, .5)
+
 
 def decode_y4m_buffer(frame):
     W, H = frame.headers['W'], frame.headers['H']
@@ -31,7 +44,7 @@ def decode_y4m_buffer(frame):
     if C.startswith('420'):
         Cb = (np.ndarray(div2, dtype, buf, A) - 128. * scale) / (224. * scale)
         Cr = (np.ndarray(div2, dtype, buf, A + Adiv2) - 128. * scale) / (224. * scale)
-        YCbCr444 = np.dstack((Y, np.kron(Cb, box2), np.kron(Cr, box2)))
+        YCbCr444 = np.dstack((Y, chroma_upscale(Cb), chroma_upscale(Cr)))
     else:
         Cb = (np.ndarray((H, W), dtype, buf, A) - 128. * scale) / (224. * scale)
         Cr = (np.ndarray((H, W), dtype, buf, A * 2) - 128. * scale) / (224. * scale)
